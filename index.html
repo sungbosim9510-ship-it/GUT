@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연암공과대학교 커리어 멘토링 - 동문 현직자 멘토 찾기</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    
+    /* 연암공과대학교 공식 시그니처 컬러 정의 */
+    :root {
+      --lg-red: #C30034;        /* RGB 195, 0, 52 */
+      --lg-red-hover: #A3002B;
+      --yonam-blue: #5FA3BF;    /* RGB 95, 163, 191 */
+      --yonam-blue-dark: #4587A3;
+      --yonam-gray: #6B6B6B;    /* RGB 107, 107, 107 */
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    .custom-card-shadow {
+      box-shadow: 0 4px 20px -2px rgba(195, 0, 52, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+    }
+    .custom-card-shadow:hover {
+      box-shadow: 0 12px 28px -4px rgba(195, 0, 52, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+    }
+
+    .badge-verified {
+      background: linear-gradient(135deg, #C30034 0%, #E61C4C 100%);
+    }
+
+    .bg-lg-red { background-color: #C30034; }
+    .text-lg-red { color: #C30034; }
+    .border-lg-red { border-color: #C30034; }
+    
+    .bg-yonam-blue { background-color: #5FA3BF; }
+    .text-yonam-blue { color: #5FA3BF; }
+    .border-yonam-blue { border-color: #5FA3BF; }
+
+    .text-yonam-gray { color: #6B6B6B; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- ==================== GNB NAV HEADER ==================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-2.5 flex items-center justify-between gap-4">
+      <!-- Logo & Campus Name -->
+      <div class="flex items-center space-x-3 cursor-pointer shrink-0" onclick="showListView()">
+        <img src="logo.png" alt="연암공과대학교 로고" class="h-9 sm:h-11 w-auto object-contain">
+        <div class="border-l-2 border-slate-200 pl-3 hidden sm:block">
+          <span class="font-bold text-base sm:text-lg text-slate-900 tracking-tight block">
+            <span class="text-lg-red font-black">CAREER</span> <span class="text-yonam-blue font-bold">MENTORING</span>
+          </span>
+          <span class="text-[11px] text-yonam-gray block -mt-1 font-medium">연암공과대학교 동문 커리어 네트워크</span>
+        </div>
+      </div>
+
+      <!-- Right Header Actions (로그인 + 멘토 질문 관리 + 나의 멘토링 내역) -->
+      <div class="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
+        <!-- Auth State Section -->
+        <div class="flex items-center space-x-3 shrink-0" id="auth-header-container">
+          <!-- 멘토 질문 관리 (멘토 로그인 시 표시) -->
+          <a
+            id="nav-btn-mentor-dashboard"
+            href="mentor-dashboard.html"
+            class="hidden text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl text-[#4587A3] bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-2xs transition items-center gap-1.5 cursor-pointer"
+          >
+            <i class="fa-solid fa-chart-line"></i> 멘토 질문 관리
+          </a>
+          <button 
+            id="btn-login-open"
+            onclick="showLoginModal()" 
+            class="text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl text-white bg-lg-red hover:bg-[#A3002B] shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <i class="fa-solid fa-right-to-bracket"></i> 로그인
+          </button>
+
+          <!-- Logged in state info (Hidden by default) -->
+          <div id="logged-in-profile" class="hidden items-center gap-3 bg-red-50/70 border border-red-100 px-3.5 py-1.5 rounded-xl">
+            <div class="flex items-center gap-2">
+              <div id="user-profile-icon" class="w-7 h-7 rounded-full bg-lg-red text-white flex items-center justify-center text-xs font-bold">
+                <i class="fa-solid fa-user-graduate"></i>
+              </div>
+              <div class="text-xs leading-tight">
+                <span id="user-display-name" class="font-bold text-slate-900 block">홍길동 님</span>
+                <span id="user-display-info" class="text-[11px] text-yonam-gray block">연암공과대학교</span>
+              </div>
+            </div>
+            <button onclick="handleLogout()" class="text-[11px] font-semibold text-slate-400 hover:text-lg-red pl-2 border-l border-slate-200 transition cursor-pointer">
+              로그아웃
+            </button>
+          </div>
+        </div>
+
+        <!-- 나의 멘토링 내역 (로그인 뒤에 배치, 로그인 후 표시) -->
+        <button 
+          id="nav-btn-mypage" 
+          onclick="showMypageView()" 
+          class="hidden px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-xl transition-all items-center gap-1.5 cursor-pointer"
+        >
+          <i class="fa-solid fa-clipboard-list text-slate-500"></i> 나의 멘토링 내역
+          <span id="header-mypage-badge" class="bg-red-100 text-lg-red text-[11px] font-bold px-1.5 py-0.2 rounded-full">3</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-grow">
+    
+    <!-- SECTION 1: LIST VIEW (화면 1) -->
+    <div id="view-list" class="transition-opacity duration-300">
+      
+      <!-- HERO & TITLE HEADER -->
+      <section class="bg-gradient-to-b from-red-50/50 via-white to-slate-50 border-b border-slate-100 py-10 md:py-14">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-100 text-lg-red text-xs font-bold mb-4 shadow-sm">
+            <i class="fa-solid fa-graduation-cap"></i> 연암공과대학교 공식 동문 멘토링
+          </div>
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-3">
+            선배에게 묻고, 내일을 그리다 - <span class="text-lg-red">대학 커리어 멘토링</span>
+          </h1>
+          <p class="text-base sm:text-lg text-yonam-gray max-w-2xl mx-auto font-normal mb-8">
+            검증된 연암공과대학교 동문 현직자와 1:1 커리어 멘토링으로 합격 노하우와 실무 정보를 확인해보세요.
+          </p>
+
+          <!-- SEARCH BAR -->
+          <div class="max-w-2xl mx-auto relative mb-8">
+            <div class="relative flex items-center">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 text-slate-400 text-lg"></i>
+              <input 
+                type="text" 
+                id="search-input" 
+                oninput="handleFilterAndSearch()"
+                placeholder="직무, 회사, 키워드로 멘토를 검색해보세요" 
+                class="w-full pl-12 pr-12 py-4 bg-white rounded-2xl border-2 border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#C30034] focus:ring-4 focus:ring-red-100 shadow-lg text-sm sm:text-base transition"
+              >
+              <button 
+                onclick="clearSearch()" 
+                id="clear-btn" 
+                class="hidden absolute right-4 text-slate-400 hover:text-slate-600 p-1"
+              >
+                <i class="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- FILTER CHIPS (BUTTON GROUP) -->
+          <div class="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto" id="filter-chips">
+            <!-- Chips rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- CARD GRID SECTION -->
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <!-- Result count & summary -->
+        <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-200">
+          <div class="text-sm font-semibold text-slate-700">
+            검색 결과 <span id="mentor-count" class="text-lg-red font-bold">0</span>명
+          </div>
+          <div class="flex items-center gap-2 text-xs text-yonam-gray">
+            <i class="fa-solid fa-arrow-down-wide-short"></i>
+            <span>최신 등록순</span>
+          </div>
+        </div>
+
+        <!-- 4-Card Responsive Grid -->
+        <div id="mentor-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+          <!-- 4 Mentor Cards injected by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm my-6">
+          <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-user-slash"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">조건에 일치하는 멘토가 없습니다</h3>
+          <p class="text-sm text-yonam-gray mb-4">검색어나 선택한 직무 필터를 변경하여 다시 찾아보세요.</p>
+          <button onclick="resetFilters()" class="px-4 py-2 bg-red-50 text-lg-red font-semibold text-sm rounded-lg hover:bg-red-100 transition">
+            필터 초기화
+          </button>
+        </div>
+      </section>
+    </div>
+
+
+    <!-- SECTION 2: DETAIL PROFILE VIEW (화면 2: 멘토 상세 프로필) -->
+    <div id="view-detail" class="hidden transition-opacity duration-300 py-8">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Back Button -->
+        <button onclick="showListView()" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 hover:text-lg-red hover:bg-white font-semibold text-sm transition mb-6 border border-slate-200 shadow-sm">
+          <i class="fa-solid fa-arrow-left"></i> 멘토 목록으로 돌아가기
+        </button>
+
+        <!-- Profile Header Card -->
+        <div class="bg-white rounded-[16px] border border-slate-200 shadow-lg overflow-hidden mb-8">
+          <!-- Header Banner background with LG Red & Yonam Blue Gradient -->
+          <div class="h-32 bg-gradient-to-r from-[#C30034] via-[#5FA3BF] to-[#4587A3] relative">
+            <span class="absolute top-4 right-4 bg-white/20 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full font-medium">
+              <i class="fa-solid fa-shield-halved mr-1"></i> 연암공대 동문 인증 멘토
+            </span>
+          </div>
+
+          <div class="px-6 sm:px-8 pb-8 relative">
+            <!-- Profile Avatar overlay -->
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between -mt-14 mb-6 gap-4">
+              <div class="flex items-end gap-5">
+                <img id="detail-avatar" src="" alt="Mentor Avatar" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-4 border-white shadow-xl object-contain p-3 bg-white">
+                <div class="mb-1">
+                  <div class="flex items-center gap-2.5 flex-wrap">
+                    <h2 id="detail-name" class="text-2xl sm:text-3xl font-bold text-slate-900"></h2>
+                    <span class="badge-verified inline-flex items-center gap-1 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                      <i class="fa-solid fa-circle-check text-[11px]"></i> 동문 인증
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Company & Role Info -->
+            <div class="bg-red-50/40 rounded-xl p-4 border border-red-100 mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span class="text-xs font-bold text-lg-red uppercase tracking-wider block mb-1">현재 직무 및 소속</span>
+                <span id="detail-company" class="text-lg font-bold text-slate-900 block"></span>
+              </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="mb-6">
+              <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">전문 키워드</h4>
+              <div id="detail-tags" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- One line bio -->
+            <div class="bg-blue-50/60 border-l-4 border-[#5FA3BF] p-4 rounded-r-xl">
+              <p id="detail-bio" class="text-slate-700 font-medium text-base leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Tabs Content -->
+        <div class="bg-white rounded-[16px] border border-slate-200 shadow-md p-6 sm:p-8">
+          <h3 class="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-user-graduate text-lg-red"></i> 멘토 프로필 상세 및 주요 성공 전략
+          </h3>
+
+          <div class="space-y-6 text-slate-700 text-sm sm:text-base">
+            <!-- Academic & Certificate Spec -->
+            <div>
+              <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-award text-[#5FA3BF]"></i> 학력 및 취득 자격증 스펙
+              </h4>
+              <div id="detail-specs" class="bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed text-sm text-slate-700"></div>
+            </div>
+
+            <!-- Experience & Strategy -->
+            <div>
+              <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-bullseye text-[#5FA3BF]"></i> 핵심 취업/이직 합격 노하우
+              </h4>
+              <div id="detail-strategy" class="bg-slate-50 p-4 rounded-xl border border-slate-200 leading-relaxed text-sm text-slate-700 space-y-2"></div>
+            </div>
+
+            <!-- Advice to Mentees -->
+            <div>
+              <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-heart text-lg-red"></i> 연암공과대학교 후배들에게 전하는 한 마디
+              </h4>
+              <blockquote id="detail-advice" class="bg-red-50/60 border-l-4 border-[#C30034] p-4 rounded-r-xl font-medium text-slate-800 italic"></blockquote>
+            </div>
+
+
+          </div>
+
+          <!-- Bottom Action -->
+          <div class="mt-8 pt-6 border-t border-slate-200 flex justify-end">
+            <button onclick="openApplyModal()" class="px-8 py-3.5 bg-[#C30034] hover:bg-[#A3002B] text-white font-bold rounded-xl shadow-lg transition">
+              1:1 멘토링 신청하기
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- SECTION 3: MYPAGE / MY MENTORING LIST VIEW (화면 3: 나의 멘토링 내역) -->
+    <div id="view-mypage" class="hidden transition-opacity duration-300 py-8">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Top Nav & Back link -->
+        <div class="flex items-center justify-between mb-6">
+          <button onclick="showListView()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-slate-600 hover:text-lg-red hover:bg-white font-semibold text-xs sm:text-sm transition border border-slate-200 shadow-xs">
+            <i class="fa-solid fa-arrow-left"></i> 동문 멘토 찾기로 돌아가기
+          </button>
+          <span class="text-xs text-yonam-gray font-semibold flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-slate-200">
+            <i class="fa-solid fa-user-check text-lg-red"></i> 멘티 마이페이지
+          </span>
+        </div>
+
+        <!-- TOP AREA (상단 영역) -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-xs mb-8 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-red-50/80 via-blue-50/30 to-transparent rounded-bl-full pointer-events-none"></div>
+          
+          <div class="relative z-10">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-lg-red text-xs font-bold mb-3 border border-red-100/80">
+              <i class="fa-solid fa-clipboard-check"></i> 1:1 커리어 멘토링 신청 현황
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+              나의 멘토링 신청 내역
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium max-w-3xl mb-6">
+              <i class="fa-solid fa-circle-info text-amber-500 mr-1"></i>
+              멘토가 질문을 확인하기 전(멘토 확인 대기 상태)에는 질문 수정 및 취소가 가능합니다.
+            </p>
+
+            <!-- STATUS FILTER TAB BAR (상태 필터 탭 바) -->
+            <div class="flex flex-wrap items-center gap-2 pt-4 border-t border-slate-100" id="mypage-status-tabs">
+              <!-- Dynamically rendered tabs: [전체 (3)] [멘토 확인 대기 (1)] [답변 작성중 (1)] [답변 완료 (1)] -->
+            </div>
+          </div>
+        </div>
+
+        <!-- MENTORING CARD LIST CONTAINER (멘토링 카드 리스트 영역) -->
+        <div class="space-y-4" id="mypage-card-list">
+          <!-- Dynamically rendered card items -->
+        </div>
+
+        <!-- MYPAGE EMPTY STATE -->
+        <div id="mypage-empty-state" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-xs my-4">
+          <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-folder-open"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">해당하는 멘토링 신청 내역이 없습니다</h3>
+          <p class="text-sm text-yonam-gray mb-6">새로운 동문 멘토를 찾아 1:1 멘토링을 신청해 보세요.</p>
+          <button onclick="showListView()" class="px-5 py-2.5 bg-lg-red text-white font-bold text-sm rounded-xl hover:bg-[#A3002B] transition shadow-xs">
+            동문 멘토 찾기
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-yonam-gray mt-12">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-center justify-center mb-3">
+        <img src="logo.png" alt="연암공과대학교 로고" class="h-8 w-auto grayscale opacity-70">
+      </div>
+      <p class="font-semibold text-slate-600 mb-1">연암공과대학교 잡카페</p>
+      <p>경상남도 진주시 진주대로 629 연암공과대학교 | 문의: career@yonam.ac.kr</p>
+      <p class="mt-2 text-slate-400">© 2026 Yonam Institute of Technology Alumni Career Mentoring. All rights reserved.</p>
+    </div>
+  </footer>
+
+
+  <!-- MODAL 1: 멘토링 신청 모달 -->
+  <div id="apply-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeApplyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-full bg-red-100 text-lg-red flex items-center justify-center font-bold text-lg shrink-0">
+          <i class="fa-solid fa-paper-plane"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">1:1 멘토링 신청</h3>
+          <p id="modal-mentor-name" class="text-xs text-yonam-gray font-medium"></p>
+        </div>
+      </div>
+
+      <form onsubmit="submitApplyForm(event)" class="space-y-5">
+        <!-- 1. 현재 상황 및 시도한 노력 (50자 이상 필수) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">나의 현재 고민과 시도해 본 노력 <span class="text-red-500">*</span></label>
+          <p class="text-[11px] text-slate-500 mb-2 leading-relaxed">어떤 어려움을 겪고 있으며, 이를 해결하기 위해 본인이 취득한 자격증이나 실습·교내 프로젝트 내용을 간략히 적어주세요.</p>
+          <textarea 
+            id="apply-input-effort" 
+            required 
+            rows="4" 
+            oninput="validateEffortInput()"
+            placeholder="예: 기계공학과 2학년으로 산업기사 필기 합격 후 실기를 준비 중이며, 전공 캡스톤 실습에서 도면 설계(CAD) 프로젝트를 수행했습니다. 대기업/중견기업 생산기술 및 설비보전 직무를 목표로 하고 있으나, 학점/자격증 외에 교내 실습 경험을 자기소개서에 어떻게 어필해야 할지 막막합니다." 
+            class="w-full px-3.5 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] transition-colors leading-relaxed"
+          ></textarea>
+          <div class="flex items-center justify-between mt-1 text-xs">
+            <span id="effort-error-msg" class="text-red-500 font-semibold hidden flex items-center gap-1">
+              <i class="fa-solid fa-circle-exclamation"></i> 최소 50자 이상 작성해 주세요
+            </span>
+            <span id="effort-char-counter" class="text-slate-400 ml-auto font-semibold">0 / 50자 이상</span>
+          </div>
+        </div>
+
+        <!-- 2. 선배님께 묻고 싶은 핵심 질문 2가지 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">멘토님께 꼭 얻고 싶은 핵심 질문 <span class="text-red-500">*</span></label>
+          
+          <!-- Info Callout -->
+          <div class="bg-amber-50 border border-amber-200/80 rounded-xl p-3 mb-3 text-xs text-amber-900 leading-relaxed flex items-start gap-2">
+            <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5 text-sm shrink-0"></i>
+            <div>
+              <strong class="font-bold">Tip.</strong> 추상적인 질문(X: 대기업 가려면 스펙 뭐 필요한가요?) 대신 구체적인 질문(O: 설비보전 실무 면접에서 캡스톤 프로젝트나 PLC 실습 경험을 어떻게 연결하셨나요?)을 권장합니다.
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">질문 1 <span class="text-red-500">*</span></label>
+              <textarea 
+                id="apply-input-q1" 
+                required 
+                rows="2" 
+                placeholder="현장 직무(생산기술/공정관리 등) 신입 채용 시, 복수의 자격증 취득과 실습 장비 다뤄본 경험 중 면접관이 더 중요하게 본 요소가 무엇이었는지 궁금합니다." 
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] transition leading-relaxed"
+              ></textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">질문 2 <span class="text-xs font-normal text-slate-400">(선택 사항)</span></label>
+              <textarea 
+                id="apply-input-q2" 
+                rows="2" 
+                placeholder="추가로 선배님께 묻고 싶은 질문이 있다면 적어주세요. (선택 사항)" 
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] transition leading-relaxed"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="pt-2 flex gap-3">
+          <button type="button" onclick="closeApplyModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-100 transition">취소</button>
+          <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-[#C30034] hover:bg-[#A3002B] text-white text-sm font-bold shadow-md transition">신청 완료</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- MODAL 2: 학과 / 학번 / 멘토 로그인 모달 -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative">
+      <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-red-50 text-lg-red rounded-full flex items-center justify-center text-xl shrink-0">
+          <i class="fa-solid fa-id-card"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">연암공과대학교 동문 로그인</h3>
+          <p class="text-xs text-yonam-gray">멘티(학생) 또는 멘토(선배) 구분을 선택하여 로그인하세요.</p>
+        </div>
+      </div>
+
+      <!-- Role Selection Tabs -->
+      <div class="flex border-b border-slate-200 mb-5" id="login-role-tabs">
+        <button 
+          type="button" 
+          onclick="switchLoginRole('mentee')" 
+          id="tab-role-mentee" 
+          class="flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-lg-red border-b-2 border-lg-red transition cursor-pointer"
+        >
+          <i class="fa-solid fa-user-graduate mr-1"></i> 멘티(학생) 로그인
+        </button>
+        <button 
+          type="button" 
+          onclick="switchLoginRole('mentor')" 
+          id="tab-role-mentor" 
+          class="flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer"
+        >
+          <i class="fa-solid fa-user-tie mr-1"></i> 멘토(선배) 로그인
+        </button>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <!-- Mentee Fields (Active by default) -->
+        <div id="login-mentee-fields" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">소속 학과</label>
+            <select id="login-major" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] bg-white font-medium text-slate-800">
+              <option value="">학과를 선택해주세요</option>
+              <option value="기계공학과">기계공학과</option>
+              <option value="스마트기계공학과">스마트기계공학과</option>
+              <option value="전기전자공학과">전기전자공학과</option>
+              <option value="스마트전기전자공학과">스마트전기전자공학과</option>
+              <option value="소프트웨어학과">소프트웨어학과</option>
+              <option value="소프트웨어(심화)">소프트웨어(심화)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">학번 (8자리 숫자)</label>
+            <input 
+              type="text" 
+              id="login-student-id" 
+              maxlength="8"
+              pattern="[0-9]{8}"
+              title="8자리 숫자로 입력해주세요 (예: 20241234)"
+              placeholder="예: 20241234" 
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
+            <input 
+              type="text" 
+              id="login-name" 
+              placeholder="성함을 입력하세요 (예: 홍길동)" 
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
+            >
+          </div>
+        </div>
+
+        <!-- Mentor Fields -->
+        <div id="login-mentor-fields" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">소속 학과</label>
+            <select id="login-mentor-major" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] bg-white font-medium text-slate-800">
+              <option value="">학과를 선택해주세요</option>
+              <option value="기계공학과">기계공학과</option>
+              <option value="스마트기계공학과">스마트기계공학과</option>
+              <option value="전기전자공학과">전기전자공학과</option>
+              <option value="스마트전기전자공학과">스마트전기전자공학과</option>
+              <option value="소프트웨어학과">소프트웨어학과</option>
+              <option value="소프트웨어(심화)">소프트웨어(심화)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">학번 (8자리 숫자)</label>
+            <input 
+              type="text" 
+              id="login-mentor-id" 
+              maxlength="8"
+              pattern="[0-9]{8}"
+              title="8자리 숫자로 입력해주세요 (예: 12345678)"
+              placeholder="예: 12345678" 
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
+            <input 
+              type="text" 
+              id="login-mentor-name" 
+              placeholder="성함을 입력하세요 (예: 홍길동)" 
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
+            >
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-3 bg-[#C30034] hover:bg-[#A3002B] text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-right-to-bracket"></i> 로그인하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- MODAL 3: 질문 상세보기 모달 -->
+  <div id="request-detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeRequestDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200">
+        <div class="w-10 h-10 rounded-full bg-blue-50 text-[#5FA3BF] flex items-center justify-center font-bold text-lg shrink-0">
+          <i class="fa-solid fa-file-lines"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-lg font-bold text-slate-900">멘토링 신청 질문 상세</h3>
+            <div id="detail-modal-status-badge"></div>
+          </div>
+          <p id="detail-modal-applied-at" class="text-xs text-yonam-gray font-medium"></p>
+        </div>
+      </div>
+
+      <!-- 멘토 정보 요약 Card -->
+      <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <img id="detail-modal-mentor-avatar" src="" class="w-12 h-12 rounded-full border border-slate-200 bg-white object-contain p-1 shrink-0">
+          <div>
+            <div class="font-bold text-slate-900 text-sm" id="detail-modal-mentor-name"></div>
+            <div class="text-xs text-yonam-gray" id="detail-modal-mentor-company"></div>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-lg-red bg-red-50 px-2.5 py-1 rounded-full border border-red-100">
+          1:1 멘토링
+        </span>
+      </div>
+
+      <!-- 질문 상세 내용 읽기 전용 -->
+      <div class="space-y-5 text-sm">
+        <!-- 0. 멘토 정중한 거절 메시지 (거절 상태일 때만 표시) -->
+        <div id="detail-modal-reject-wrapper" class="hidden">
+          <h4 class="text-xs font-bold text-red-700 uppercase mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-exclamation text-red-600"></i> 멘토님의 정중한 거절 메시지
+          </h4>
+          <div id="detail-modal-reject-reason" class="bg-red-50/90 p-4 rounded-xl border border-red-200 leading-relaxed text-slate-800 font-medium text-xs sm:text-sm"></div>
+        </div>
+
+        <!-- 1. 고민 및 시도한 노력 -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-compass text-lg-red"></i> 나의 현재 고민 및 시도해 본 노력
+          </h4>
+          <div id="detail-modal-effort" class="bg-slate-50/80 p-4 rounded-xl border border-slate-200 leading-relaxed text-slate-800 whitespace-pre-line font-medium text-xs sm:text-sm"></div>
+        </div>
+
+        <!-- 2. 핵심 질문 1 -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-question text-yonam-blue"></i> 핵심 질문 1
+          </h4>
+          <div id="detail-modal-q1" class="bg-slate-50/80 p-4 rounded-xl border border-slate-200 leading-relaxed text-slate-800 font-medium text-xs sm:text-sm"></div>
+        </div>
+
+        <!-- 3. 핵심 질문 2 -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-question text-yonam-blue"></i> 핵심 질문 2
+          </h4>
+          <div id="detail-modal-q2" class="bg-slate-50/80 p-4 rounded-xl border border-slate-200 leading-relaxed text-slate-800 font-medium text-xs sm:text-sm"></div>
+        </div>
+
+      </div>
+
+      <div class="pt-6 mt-6 border-t border-slate-200 flex items-center justify-between">
+        <button onclick="closeRequestDetailModal()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-100 transition">
+          닫기
+        </button>
+        <div id="detail-modal-action-buttons">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 4: 멘토 답변 보기 모달 -->
+  <div id="answer-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeAnswerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200">
+        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-bold text-slate-900">멘토 피드백 답변</h3>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <i class="fa-solid fa-circle-check"></i> 답변 완료
+            </span>
+          </div>
+          <p id="answer-modal-date" class="text-xs text-yonam-gray font-medium"></p>
+        </div>
+      </div>
+
+      <!-- 멘토 프로필 Header Card -->
+      <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl p-4 mb-6 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <img id="answer-modal-mentor-avatar" src="" class="w-12 h-12 rounded-full border-2 border-white/20 bg-white object-contain p-1 shrink-0">
+          <div>
+            <div class="font-bold text-base flex items-center gap-2" id="answer-modal-mentor-name"></div>
+            <div class="text-xs text-slate-300" id="answer-modal-mentor-company"></div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-700/50">
+          <i class="fa-solid fa-award mr-1"></i> 검증 완료
+        </span>
+      </div>
+
+      <!-- 1. 작성한 질문 내용 (질문 먼저 표시) -->
+      <div class="mb-6 bg-slate-50/90 rounded-xl p-4 sm:p-5 border border-slate-200/90">
+        <h4 class="text-xs font-bold text-slate-600 uppercase mb-3 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-question text-lg-red"></i> 내가 보낸 질문 내용
+        </h4>
+        <div class="space-y-3 text-xs sm:text-sm">
+          <div>
+            <span class="font-bold text-slate-500 text-xs block mb-1 flex items-center gap-1">
+              <i class="fa-solid fa-compass text-amber-500"></i> 시도한 노력 및 현재 고민
+            </span>
+            <p id="answer-modal-my-effort" class="text-slate-800 leading-relaxed font-medium bg-white p-3 rounded-xl border border-slate-200/80 whitespace-pre-line"></p>
+          </div>
+          <div>
+            <span class="font-bold text-slate-500 text-xs block mb-1 flex items-center gap-1">
+              <i class="fa-solid fa-q text-lg-red"></i> 핵심 질문 1
+            </span>
+            <p id="answer-modal-my-q1" class="text-slate-800 leading-relaxed font-medium bg-white p-3 rounded-xl border border-slate-200/80"></p>
+          </div>
+          <div id="answer-modal-q2-wrapper">
+            <span class="font-bold text-slate-500 text-xs block mb-1 flex items-center gap-1">
+              <i class="fa-solid fa-q text-lg-red"></i> 핵심 질문 2
+            </span>
+            <p id="answer-modal-my-q2" class="text-slate-800 leading-relaxed font-medium bg-white p-3 rounded-xl border border-slate-200/80"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 멘토 피드백 답변 (질문 다음에 답변 표시) -->
+      <div class="mb-6">
+        <h4 class="text-xs font-bold text-emerald-700 uppercase mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-comment-dots text-emerald-600"></i> 멘토님의 피드백 및 답변
+        </h4>
+        <div id="answer-modal-content" class="bg-emerald-50/50 p-5 rounded-xl border border-emerald-200/80 text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-line font-medium shadow-xs"></div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 flex justify-end">
+        <button onclick="closeAnswerModal()" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-xs transition">
+          확인 완료
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL 5: 신청 취소 확인 모달 -->
+  <div id="cancel-confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center relative">
+      <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl mx-auto mb-4">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">멘토링 신청을 취소하시겠습니까?</h3>
+      <p class="text-xs text-slate-500 mb-6 leading-relaxed">취소한 멘토링 신청은 복구할 수 없으며, 필요 시 새로 신청해 주셔야 합니다.</p>
+      
+      <div class="flex gap-2">
+        <button onclick="closeCancelModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition">
+          돌아가기
+        </button>
+        <button id="btn-confirm-cancel-execute" onclick="executeCancelRequest()" class="w-1/2 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs transition">
+          신청 취소하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium hidden items-center gap-3 z-50 border border-slate-700">
+    <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
+    <span id="toast-message">신청이 완료되었습니다.</span>
+  </div>
+
+
+
+  <!-- ==================== SCRIPT & MOCK DATA (20s YOUNG PROFESSIONAL AVATARS) ==================== -->
+  <script>
+    // Categories: [전체], [설비보전], [생산가공], [품질보증], [도시가스]
+    const CATEGORIES = [
+      { id: 'all', name: '전체' },
+      { id: 'maintenance', name: '설비보전' },
+      { id: 'production', name: '생산가공' },
+      { id: 'quality', name: '품질보증' },
+      { id: 'gas', name: '도시가스' }
+    ];
+
+    // Reliable self-contained vector SVG company logos
+    const COMPANY_LOGOS = {
+      "SK하이닉스": "https://search.pstatic.net/common/?src=http%3A%2F%2Fimgnews.naver.net%2Fimage%2F5095%2F2026%2F06%2F17%2F0001042880_001_20260617102611766.png&type=sc960_832",
+      "현대위아": "https://search.pstatic.net/common/?src=http%3A%2F%2Fimgnews.naver.net%2Fimage%2F417%2F2021%2F03%2F30%2F0000675485_001_20210330113000460.png&type=sc960_832",
+      "한화에어로스페이스": "https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA2MTdfMTgz%2FMDAxNzgxNjY5MzU3NTkx.2dcOiJGao15o3EMC7qMkepGLvlmQI2ZiXFiEGRu_qDUg.ivMoi7f6T8JLZseNy-9T-5FgWOU1c7rimawLadzEhn4g.PNG%2F6fe307c3-0ff7-48f6-bd47-b15c830316a9.png&type=sc960_832",
+      "부산도시가스": "https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNTEwMjNfNjcg%2FMDAxNzYxMjA3MjMxNzgz.nx94CNBTS3R8WZuvcHNO4tigu4F-VdA6vwVAgrLV8xUg.9SKqvfiJZwPjAR6N7gvaPb5z15H9C1mntffRzVKGKIUg.PNG%2F%25BA%25CE%25BB%25EA%25B5%25B5%25BD%25C3%25B0%25A1%25BD%25BA_%25C3%25A4%25BF%25EB%25BD%25E6%25B3%25D7%25C0%25CF.png&type=sc960_832"
+    };
+
+    // 4 Mentors from PDF with 20s Mid-age Young Professional Avatars matching company & job
+    const MENTORS = [
+      {
+        id: 1,
+        name: "강동현",
+        company: "SK하이닉스",
+        role: "Maintenance (설비보전)",
+        category: "maintenance",
+        tags: ["#중소기업이직", "#SK하이닉스", "#실무경험중요"],
+        bio: "중소기업 취업 후 실무 경험을 쌓아 SK하이닉스 설비보전 엔지니어 이직에 성공했습니다.",
+        specs: "• 학점: 3.97 / 4.5<br>• 취득 자격증: 전기기능사, 가스기능사, 환경기능사, 산업안전산업기사, 위험물산업기사, 컴활 1급/2급 (총 7개)",
+        strategy: "1. <strong>중소기업(SLP주식회사 공무팀) 실무 경험:</strong> 경력자와 비경력자의 면접 차이를 체감하고, 현장 경험을 바탕으로 구체적 답변 마련<br>2. <strong>자격증 지속 취득:</strong> 근무 중 위험물산업기사, 컴활 1급 추가 취득으로 직무 전문성 강화<br>3. <strong>AI 툴 활용:</strong> 자소서 작성 시 AI 초안 활용 후 실무 경험 중심으로 보완하여 완성도 극대화",
+        advice: "〃졸업 후 취업준비를 하다 보면 심리적으로 위축되고 본인을 의심하는 일이 생깁니다. 그럴 때마다 자책하거나 무너지지 말고 목표를 향해 포기하지 말고 나아가세요! 중소기업 취업이 패배가 아닌 대기업 이직을 위한 값진 계단이 됩니다.〃",
+        avatar: COMPANY_LOGOS["SK하이닉스"]
+      },
+      {
+        id: 2,
+        name: "박성용",
+        company: "현대위아",
+        role: "등속생산팀 가공3반",
+        category: "production",
+        tags: ["#현대위아", "#생산가공", "#면접탈락극복"],
+        bio: "현대차 최종 면접 탈락의 시련을 극복하고, 가공 경력과 자격증을 기업 인재상과 매칭해 현대위아 최종 합격했습니다.",
+        specs: "• 학점: 3.8 / 4.5<br>• 자격증: 설비보전기사, 산업안전기사, 특수용접기능사, 일반용접, 선반, 밀링, 기계조립, 지게차운전기능사<br>• 경력: 아스프정밀항공 현장 정밀 가공 경력 (2017~2021년)",
+        strategy: "1. <strong>탈락 원인 분석:</strong> 평범한 답변에서 벗어나 현장 정밀 가공 경력과 현대위아 '위아다움' 인재상 정밀 매칭<br>2. <strong>전략적 자격증 라인업:</strong> 기본 기사 자격증 외 미래 신사업(열관리 사업) 대비 공조냉동기계 준비 강추<br>3. <strong>잡카페 컨설팅 활용:</strong> 대학 잡카페를 적극 활용하여 구체적인 현장 즉시 성과 어필 전략 수립",
+        advice: "〃한두 번의 면접 탈락에 절대 좌절하지 마세요. 여러분이 쌓아온 경험을 확실히 정리하고 강점화한다면 반드시 여러분만의 기회가 열립니다.〃",
+        avatar: COMPANY_LOGOS["현대위아"]
+      },
+      {
+        id: 3,
+        name: "황문재",
+        company: "한화에어로스페이스",
+        role: "협력사품질1팀",
+        category: "quality",
+        tags: ["#한화에어로스페이스", "#품질보증", "#실전면접연습"],
+        bio: "학점 4.11과 7개 자격증 바탕으로 실전 예상질문 녹음 훈련을 거쳐 한화에어로스페이스 품질보증 합격!",
+        specs: "• 학점: 4.11 / 4.5<br>• 자격증: 산업안전산업기사, 기계정비산업기사, 컴퓨터응용산업기사, 밀링기능사, 전산응용기계제도기능사, 선반기능사, 금형기능사<br>• 직무: 해외 도입품 검사 (기능품, 체결류, 판재 품질 보증)",
+        strategy: "1. <strong>실전 면접 반복 훈련:</strong> 모든 예상 질문 리스트업 후 답변 과정을 직접 녹음하여 어조, 발음, 자연스러운 표정 훈련<br>2. <strong>팀에 필요한 3대 역량 강조:</strong> 원인 추적의 집요함, 겸손하고 배우려는 학습 태도, 명확한 커뮤니케이션 보고 능력 어필<br>3. <strong>품질 경험 강조:</strong> 서류 및 면접 시 직무와 연관된 품질 관련 실제 경험 집중 어필",
+        advice: "〃힘들 때는 아무 생각 말고 그냥 하자! 완벽하게 준비한 뒤 도전하기보다 수많은 반복을 통해 실전에서 당당하게 말하는 습관을 만드는 것이 가장 중요합니다.〃",
+        avatar: COMPANY_LOGOS["한화에어로스페이스"]
+      },
+      {
+        id: 4,
+        name: "김종민",
+        company: "부산도시가스",
+        role: "안전관리실 종합상황팀 주임",
+        category: "gas",
+        tags: ["#부산도시가스", "#1070대1합격", "#잡카페활용"],
+        bio: "1,070:1의 역대급 경쟁률을 뚫고 부산도시가스 안전관리 직무 합격! 대학 잡카페 200% 활용 노하우를 공개합니다.",
+        specs: "• 학점: 4.28 / 4.5<br>• 자격증: 산업안전산업기사, 위험물산업기사, 가스기능사, 지게차운전기능사, 굴착기운전기능사<br>• 소속: 부산도시가스 안전관리실 종합상황팀",
+        strategy: "1. <strong>대학 잡카페 200% 활용:</strong> 자소서 첨삭부터 면접 컨설팅까지 잡카페를 통해 완성<br>2. <strong>직무 맞춤 자격증:</strong> 가스·안전 관련 자격증을 집중 취득하여 실무 준비된 인재임을 입증<br>3. <strong>선택과 집중 전략:</strong> 연이은 서류 탈락에도 굴하지 않고 '부산도시가스 정밀 타격' 목표로 긍정적 에너지를 면접관에게 전파",
+        advice: "〃이름 없는 작은 회사조차 서류전형에서 여러 번 탈락했습니다. 하지만 결국 1,070:1의 경쟁률을 뚫고 부산도시가스에 합격했습니다. 절대 좌절하지 마세요! 기회는 분명히 올 것입니다!〃",
+        avatar: COMPANY_LOGOS["부산도시가스"]
+      }
+    ];
+
+    // Default Mock Requests Seed (Matching mentor-dashboard.html)
+    const DEFAULT_MOCK_REQUESTS = [
+      {
+        id: 'req-1',
+        mentorId: 1,
+        mentorName: '강동현',
+        mentorCompany: 'SK하이닉스',
+        mentorRole: 'Maintenance (설비보전)',
+        mentorAvatar: COMPANY_LOGOS["SK하이닉스"],
+        studentName: '김철수',
+        department: '기계공학과',
+        grade: '2학년',
+        studentId: '20241234',
+        status: 'pending',
+        appliedAt: '2026.10.08 접수',
+        effort: '설비보전 직무 취업을 위해 산업안전기사 자격증과 전기기능사를 준비하고 있습니다. 중소기업 실무 경험 후 대기업 이직 과정에서 준비하셨던 가장 핵심적인 항목이 궁금합니다.',
+        q1: '설비보전 직무 면접 시 자격증과 실습 경험 중 어느 부분이 더 중요하게 평가받나요?',
+        q2: '비전공자나 학점이 높지 않아도 보전 직무에서 강점을 어필할 수 있는 노하우가 궁금합니다.'
+      },
+      {
+        id: 'req-2',
+        mentorId: 1,
+        mentorName: '강동현',
+        mentorCompany: 'SK하이닉스',
+        mentorRole: 'Maintenance (설비보전)',
+        mentorAvatar: COMPANY_LOGOS["SK하이닉스"],
+        studentName: '이민준',
+        department: '스마트전기전자공학과',
+        grade: '3학년',
+        studentId: '20231588',
+        status: 'in_progress',
+        appliedAt: '2026.10.07 접수',
+        effort: 'SK하이닉스 설비보전 엔지니어 직무를 희망하는 3학년 학생입니다. 반도체 관련 공정 자격증과 PLC 실습 경험이 있습니다.',
+        q1: '반도체 장비 유지보수 시 가장 빈번하게 발생하는 이슈와 이를 면접에서 스토리텔링하는 법이 궁금합니다.',
+        q2: '교내 실습 장비 경험을 자소서에 효과적으로 녹이는 팁을 알려주세요.'
+      },
+      {
+        id: 'req-3',
+        mentorId: 1,
+        mentorName: '강동현',
+        mentorCompany: 'SK하이닉스',
+        mentorRole: 'Maintenance (설비보전)',
+        mentorAvatar: COMPANY_LOGOS["SK하이닉스"],
+        studentName: '박서연',
+        department: '기계공학과',
+        grade: '2학년',
+        studentId: '20242211',
+        status: 'completed',
+        appliedAt: '2026.10.02 접수',
+        completedAt: '2026.10.05 답변 완료',
+        effort: '공무 및 설비 관리 직무 면접 준비 중입니다.',
+        q1: '선배님께서 SLP 중소기업에서 쌓으셨던 경험 중 SK하이닉스 이직 시 가장 큰 도움이 된 경험은 무엇인가요?',
+        q2: '면접관의 돌발 질문에 대처하셨던 경험이 있으신가요?',
+        answer: {
+          date: '2026.10.05 14:20',
+          title: '멘토님의 1:1 멘토링 피드백 및 답변',
+          q1: '중소기업 공무팀 근무 시 실무 기계 장비 현장에서 직접 도면을 보고 수리한 경험이 직무 면접 시 가장 강력한 무기가 되었습니다. 이론보다 실패와 해결 사례를 구체적으로 말씀하세요.',
+          q2: '모르는 질문이 나왔을 때는 당황하지 않고 모름을 인정한 뒤 기초 원리에 기반하여 접근법을 설명한 것이 긍정적 평가를 받았습니다.',
+          cheer: '후배님! 중소기업이나 교내 실습 경험도 훌륭한 자산입니다. 자신감을 갖고 포기하지 마세요!'
+        }
+      },
+      {
+        id: 'req-4',
+        mentorId: 2,
+        mentorName: '박성용',
+        mentorCompany: '현대위아',
+        mentorRole: '등속생산팀 가공3반',
+        mentorAvatar: COMPANY_LOGOS["현대위아"],
+        studentName: '정현우',
+        department: '기계공학과',
+        grade: '1학년',
+        studentId: '20251102',
+        status: 'pending',
+        appliedAt: '2026.10.08 접수',
+        effort: '생산가공 및 정밀 공정 직무 취업을 목표로 선반/밀링 실습을 진행 중입니다.',
+        q1: '현대위아 등속생산팀에서 가공 실무 시 가장 중요하게 여겨지는 가공 정밀도 역량은 무엇인가요?',
+        q2: '면접 탈락 시 시련을 극복하고 마인드를 재정비했던 노하우를 공유해 주세요.'
+      },
+      {
+        id: 'req-5',
+        mentorId: 2,
+        mentorName: '박성용',
+        mentorCompany: '현대위아',
+        mentorRole: '등속생산팀 가공3반',
+        mentorAvatar: COMPANY_LOGOS["현대위아"],
+        studentName: '최예은',
+        department: '생산가공학과',
+        grade: '2학년',
+        studentId: '20243301',
+        status: 'completed',
+        appliedAt: '2026.10.01 접수',
+        completedAt: '2026.10.04 답변 완료',
+        effort: '현대위아 취업을 준비하는 학생입니다.',
+        q1: '위아다움 인재상과 가공 경험을 매칭할 때 어떤 키워드를 강조하면 좋을까요?',
+        q2: '공조냉동기계 자격증 준비 팁이 궁금합니다.',
+        answer: {
+          date: '2026.10.04 11:30',
+          title: '멘토님의 1:1 멘토링 피드백 및 답변',
+          q1: '현장 실무에서의 집요함과 정밀 가공 오차 범위를 줄이기 위한 열정이 현대위아의 인재상과 정확히 일치합니다.',
+          q2: '열관리 사업 관련 직무 지식을 넓히기에 적합한 자격증이니 기초 공학 개념 위주로 독학해보시는 것을 추천합니다.',
+          cheer: '한두 번의 탈락에 좌절하지 말고 꾸준히 준비하세요!'
+        }
+      },
+      {
+        id: 'req-6',
+        mentorId: 3,
+        mentorName: '황문재',
+        mentorCompany: '한화에어로스페이스',
+        mentorRole: '협력사품질1팀',
+        mentorAvatar: COMPANY_LOGOS["한화에어로스페이스"],
+        studentName: '한지훈',
+        department: '품질공학과',
+        grade: '3학년',
+        studentId: '20234412',
+        status: 'pending',
+        appliedAt: '2026.10.08 접수',
+        effort: '한화에어로스페이스 방산 및 항공 품질보증 부서 입사를 준비하고 있습니다.',
+        q1: '해외 도입품 검사 시 품질 불량 이슈를 조치했던 실무 사례와 관련 역량이 궁금합니다.',
+        q2: '실전 면접 녹음 훈련을 어떻게 진행하셨는지 구체적인 방법이 궁금합니다.'
+      },
+      {
+        id: 'req-7',
+        mentorId: 4,
+        mentorName: '김종민',
+        mentorCompany: '부산도시가스',
+        mentorRole: '안전관리실 종합상황팀',
+        mentorAvatar: COMPANY_LOGOS["부산도시가스"],
+        studentName: '윤성민',
+        department: '가스에너지공학과',
+        grade: '2학년',
+        studentId: '20245599',
+        status: 'completed',
+        appliedAt: '2026.10.03 접수',
+        completedAt: '2026.10.06 답변 완료',
+        effort: '도시가스 안전관리 직무 준비 중입니다.',
+        q1: '1,070대 1의 높은 경쟁률을 뚫으실 때 면접관을 사로잡았던 자신만의 차별화된 무기는 무엇인가요?',
+        q2: '가스 및 안전 자격증 취득 순서 추천 부탁드립니다.',
+        answer: {
+          date: '2026.10.06 16:10',
+          title: '멘토님의 1:1 멘토링 피드백 및 답변',
+          q1: '대학 잡카페 컨설팅을 활용해 완성한 서류와, 실패에도 굴하지 않고 밝고 긍정적인 에너지를 전달한 점이 합격 요인이었습니다.',
+          q2: '가스기능사 -> 위험물산업기사 -> 산업안전산업기사 순서로 연계 취득하시는 것을 권장합니다.',
+          cheer: '기회는 반드시 옵니다. 긍정적인 마음으로 정진하세요!'
+        }
+      }
+    ];
+
+    // State
+    let activeCategory = 'all';
+    let searchQuery = '';
+    let selectedMentor = null;
+    let currentUser = null; // { major, studentId, name }
+
+    // My Mentoring Applications State Data
+    let myMentoringList = [];
+
+    function loadMyMentoringList() {
+      let saved = localStorage.getItem('yonam_mentoring_requests');
+      if (!saved) {
+        localStorage.setItem('yonam_mentoring_requests', JSON.stringify(DEFAULT_MOCK_REQUESTS));
+        saved = JSON.stringify(DEFAULT_MOCK_REQUESTS);
+      }
+      try {
+        myMentoringList = JSON.parse(saved);
+      } catch(e) {
+        myMentoringList = [];
+      }
+    }
+
+    let activeMypageFilter = 'all'; // 'all', 'pending', 'in_progress', 'completed', 'rejected'
+    let editingRequestId = null;
+    let deletingRequestId = null;
+
+    function checkLocalStorageStatus() {
+      loadMyMentoringList();
+    }
+
+    // DOM Ready Initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      checkLocalStorageStatus();
+      checkLoginStatus();
+      renderFilterChips();
+      renderMentorCards();
+      renderMypageTabs();
+      renderMypageCards();
+      updateNavHighlight('mentors');
+    });
+
+    // Navigation Switchers
+    function showListView() {
+      document.getElementById('view-detail').classList.add('hidden');
+      document.getElementById('view-mypage').classList.add('hidden');
+      document.getElementById('view-list').classList.remove('hidden');
+      updateNavHighlight('mentors');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showMypageView() {
+      document.getElementById('view-list').classList.add('hidden');
+      document.getElementById('view-detail').classList.add('hidden');
+      document.getElementById('view-mypage').classList.remove('hidden');
+      updateNavHighlight('mypage');
+      renderMypageTabs();
+      renderMypageCards();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateNavHighlight(targetView) {
+      const btnMypage = document.getElementById('nav-btn-mypage');
+      
+      if (btnMypage) {
+        const icon = btnMypage.querySelector('i');
+        const displayClass = (currentUser && currentUser.role === 'mentee') ? 'flex' : 'hidden';
+        if (targetView === 'mypage') {
+          btnMypage.className = `${displayClass} px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all text-white bg-lg-red shadow-xs items-center gap-1.5 cursor-pointer`;
+          if (icon) icon.className = 'fa-solid fa-clipboard-list text-white';
+        } else {
+          btnMypage.className = `${displayClass} px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-xl transition-all items-center gap-1.5 cursor-pointer`;
+          if (icon) icon.className = 'fa-solid fa-clipboard-list text-slate-500';
+        }
+      }
+
+      const headerBadge = document.getElementById('header-mypage-badge');
+      if (headerBadge) {
+        headerBadge.textContent = myMentoringList.length;
+      }
+    }
+
+    // Render Filter Chips
+    function renderFilterChips() {
+      const container = document.getElementById('filter-chips');
+      if (!container) return;
+      container.innerHTML = CATEGORIES.map(cat => {
+        const isActive = cat.id === activeCategory;
+        const activeClass = isActive 
+          ? 'bg-[#C30034] text-white shadow-md font-bold border-[#C30034]' 
+          : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-slate-200 font-semibold';
+        return `
+          <button 
+            onclick="setCategory('${cat.id}')"
+            class="px-4 py-2 text-xs sm:text-sm rounded-full border transition-all duration-200 ${activeClass}"
+          >
+            ${cat.name}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // Category Change Action
+    function setCategory(catId) {
+      activeCategory = catId;
+      renderFilterChips();
+      renderMentorCards();
+    }
+
+    // Search and Filter handler
+    function handleFilterAndSearch() {
+      const input = document.getElementById('search-input');
+      const clearBtn = document.getElementById('clear-btn');
+      searchQuery = input.value.trim().toLowerCase();
+
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      renderMentorCards();
+    }
+
+    // Clear search
+    function clearSearch() {
+      const input = document.getElementById('search-input');
+      if (input) input.value = '';
+      searchQuery = '';
+      const clearBtn = document.getElementById('clear-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderMentorCards();
+    }
+
+    // Reset filters
+    function resetFilters() {
+      activeCategory = 'all';
+      clearSearch();
+      renderFilterChips();
+    }
+
+    // Filter Mentors Logic
+    function getFilteredMentors() {
+      return MENTORS.filter(mentor => {
+        const matchCategory = (activeCategory === 'all') || (mentor.category === activeCategory);
+        if (!searchQuery) return matchCategory;
+
+        const queryMatch = 
+          mentor.name.toLowerCase().includes(searchQuery) ||
+          mentor.company.toLowerCase().includes(searchQuery) ||
+          mentor.role.toLowerCase().includes(searchQuery) ||
+          mentor.bio.toLowerCase().includes(searchQuery) ||
+          mentor.tags.some(t => t.toLowerCase().includes(searchQuery));
+
+        return matchCategory && queryMatch;
+      });
+    }
+
+    // Render Mentor Cards in Responsive Grid
+    function renderMentorCards() {
+      const filtered = getFilteredMentors();
+      const grid = document.getElementById('mentor-grid');
+      const emptyState = document.getElementById('empty-state');
+      const countEl = document.getElementById('mentor-count');
+
+      if (countEl) countEl.textContent = filtered.length;
+      if (!grid || !emptyState) return;
+
+      if (filtered.length === 0) {
+        grid.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      grid.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(mentor => `
+        <div 
+          onclick="openMentorDetail(${mentor.id})"
+          class="bg-white rounded-[12px] border border-slate-200 p-6 custom-card-shadow transition-all duration-200 cursor-pointer flex flex-col justify-between group hover:-translate-y-1"
+        >
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <img 
+                src="${mentor.avatar}" 
+                alt="${mentor.company}" 
+                class="w-16 h-16 rounded-xl object-contain p-2 bg-white border border-slate-200 shadow-sm group-hover:scale-105 transition-transform"
+              >
+              <span class="badge-verified inline-flex items-center gap-1 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                <i class="fa-solid fa-check text-[10px]"></i> 동문 인증
+              </span>
+            </div>
+
+            <div class="mb-3">
+              <h3 class="text-lg font-bold text-slate-900 group-hover:text-[#C30034] transition-colors flex items-center gap-2">
+                ${mentor.name} 선배
+              </h3>
+            </div>
+
+            <div class="bg-blue-50/70 rounded-lg p-3 mb-4 border border-blue-100">
+              <p class="text-xs font-bold text-[#4587A3] flex items-center gap-1.5">
+                <i class="fa-solid fa-briefcase text-[11px]"></i>
+                ${mentor.company} · ${mentor.role}
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              ${mentor.tags.map(tag => `
+                <span class="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                  ${tag}
+                </span>
+              `).join('')}
+            </div>
+
+            <p class="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed mb-6 font-normal">
+              "${mentor.bio}"
+            </p>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100">
+            <button 
+              onclick="event.stopPropagation(); openMentorDetail(${mentor.id})"
+              class="w-full py-2.5 px-4 bg-slate-50 hover:bg-[#C30034] text-[#C30034] hover:text-white font-bold text-xs sm:text-sm rounded-lg border border-red-200 hover:border-[#C30034] transition-all flex items-center justify-center gap-1.5 group-hover:bg-[#C30034] group-hover:text-white"
+            >
+              <span>프로필 보기</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Switch to Mentor Detail View
+    function openMentorDetail(mentorId) {
+      const mentor = MENTORS.find(m => m.id === mentorId);
+      if (!mentor) return;
+      selectedMentor = mentor;
+      localStorage.setItem('yonam_selected_mentor', JSON.stringify(mentor));
+
+      document.getElementById('detail-avatar').src = mentor.avatar;
+      document.getElementById('detail-name').textContent = `${mentor.name} 선배`;
+      document.getElementById('detail-company').textContent = `${mentor.company} · ${mentor.role}`;
+      document.getElementById('detail-bio').textContent = `"${mentor.bio}"`;
+      
+      document.getElementById('detail-specs').innerHTML = mentor.specs;
+      document.getElementById('detail-strategy').innerHTML = mentor.strategy;
+      document.getElementById('detail-advice').innerHTML = mentor.advice;
+
+      document.getElementById('detail-tags').innerHTML = mentor.tags.map(tag => `
+        <span class="text-xs font-semibold text-[#C30034] bg-red-50 px-3 py-1 rounded-full border border-red-100">
+          ${tag}
+        </span>
+      `).join('');
+
+      document.getElementById('view-list').classList.add('hidden');
+      document.getElementById('view-mypage').classList.add('hidden');
+      document.getElementById('view-detail').classList.remove('hidden');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==================== MYPAGE TAB & CARD RENDERERS ====================
+    function renderMypageTabs() {
+      const pendingCount = myMentoringList.filter(i => i.status === 'pending').length;
+      const inProgressCount = myMentoringList.filter(i => i.status === 'in_progress').length;
+      const completedCount = myMentoringList.filter(i => i.status === 'completed').length;
+      const rejectedCount = myMentoringList.filter(i => i.status === 'rejected').length;
+      const totalCount = myMentoringList.length;
+
+      const tabs = [
+        { id: 'all', label: `전체 (${totalCount})` },
+        { id: 'pending', label: `멘토 확인 대기 (${pendingCount})` },
+        { id: 'in_progress', label: `답변 작성중 (${inProgressCount})` },
+        { id: 'completed', label: `답변 완료 (${completedCount})` },
+        { id: 'rejected', label: `답변 거절 (${rejectedCount})` }
+      ];
+
+      const container = document.getElementById('mypage-status-tabs');
+      if (!container) return;
+
+      container.innerHTML = tabs.map(tab => {
+        const isActive = activeMypageFilter === tab.id;
+        const activeCss = isActive
+          ? 'bg-slate-900 text-white font-bold shadow-xs border-slate-900'
+          : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200 font-semibold';
+        return `
+          <button 
+            onclick="setMypageFilter('${tab.id}')"
+            class="px-4 py-2 text-xs sm:text-sm rounded-xl border transition-all duration-200 ${activeCss}"
+          >
+            ${tab.label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setMypageFilter(filterId) {
+      activeMypageFilter = filterId;
+      renderMypageTabs();
+      renderMypageCards();
+    }
+
+    function getFilteredMyMentoringList() {
+      if (activeMypageFilter === 'all') return myMentoringList;
+      return myMentoringList.filter(item => item.status === activeMypageFilter);
+    }
+
+    function renderMypageCards() {
+      const container = document.getElementById('mypage-card-list');
+      const emptyState = document.getElementById('mypage-empty-state');
+      if (!container || !emptyState) return;
+
+      const filtered = getFilteredMyMentoringList();
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      container.innerHTML = filtered.map(item => {
+        let statusBadge = '';
+        if (item.status === 'pending') {
+          statusBadge = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80 shadow-xs">
+              <i class="fa-solid fa-clock-rotate-left text-[11px]"></i> 멘토 확인 대기
+            </span>`;
+        } else if (item.status === 'in_progress') {
+          statusBadge = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+              <i class="fa-solid fa-spinner fa-spin text-[11px]"></i> 답변 작성중
+            </span>`;
+        } else if (item.status === 'completed') {
+          statusBadge = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-xs">
+              <i class="fa-solid fa-circle-check text-[11px]"></i> 답변 완료
+            </span>`;
+        } else if (item.status === 'rejected') {
+          statusBadge = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200/80 shadow-xs">
+              <i class="fa-solid fa-user-xmark text-[11px]"></i> 답변 거절됨
+            </span>`;
+        }
+
+        let actionButtons = '';
+        if (item.status === 'pending') {
+          actionButtons = `
+            <div class="flex items-center gap-2 flex-wrap">
+              <button 
+                onclick="openEditRequestModal('${item.id}')"
+                class="px-3.5 py-2 text-xs sm:text-sm font-bold text-[#4587A3] bg-blue-50/80 hover:bg-blue-100 border border-blue-200 rounded-xl transition flex items-center gap-1.5 shadow-xs"
+              >
+                <i class="fa-solid fa-pen-to-square"></i> 수정하기
+              </button>
+              <button 
+                onclick="confirmCancelRequest('${item.id}')"
+                class="px-3 py-2 text-xs sm:text-sm font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition flex items-center gap-1"
+              >
+                <i class="fa-solid fa-trash-can"></i> 신청 취소
+              </button>
+            </div>
+          `;
+        } else if (item.status === 'in_progress') {
+          actionButtons = `
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed select-none">
+                <i class="fa-solid fa-lock text-[11px]"></i> 수정 불가 (답변 작성중)
+              </span>
+            </div>
+          `;
+        } else if (item.status === 'completed') {
+          actionButtons = `
+            <div class="flex items-center gap-2 flex-wrap">
+              <button 
+                onclick="openAnswerModal('${item.id}')"
+                class="px-4 py-2 text-xs sm:text-sm font-bold text-white bg-[#4587A3] hover:bg-[#346a82] border border-[#4587A3] rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <i class="fa-solid fa-envelope-open-text"></i> 답변 전문 보기
+              </button>
+            </div>
+          `;
+        } else if (item.status === 'rejected') {
+          actionButtons = `
+            <div class="flex items-center gap-2 flex-wrap">
+              <button 
+                onclick="openRequestDetailModal('${item.id}')"
+                class="px-4 py-2 text-xs sm:text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <i class="fa-solid fa-circle-info"></i> 거절 사유 상세보기
+              </button>
+            </div>
+          `;
+        }
+
+        const rejectNoticeBox = (item.status === 'rejected') ? `
+          <div class="bg-red-50/80 rounded-xl p-3.5 border border-red-200/80 mb-4">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-red-700 mb-1">
+              <i class="fa-solid fa-circle-exclamation"></i> 멘토님의 정중한 거절 메시지
+            </div>
+            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              "${item.rejectReason || '현재 개인 일정 및 직무 업무 과중으로 답변이 어렵습니다.'}"
+            </p>
+          </div>
+        ` : '';
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                ${statusBadge}
+              </div>
+              <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                <i class="fa-regular fa-calendar text-[11px]"></i> ${item.appliedAt}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-3.5 mb-4">
+              <img 
+                src="${item.mentorAvatar}" 
+                alt="${item.mentorName}" 
+                class="w-12 h-12 rounded-full border border-slate-200 p-1 bg-white object-contain shadow-xs shrink-0"
+              >
+              <div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  ${item.mentorName} 멘토
+                  <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    ${item.mentorCompany}
+                  </span>
+                </h3>
+                <p class="text-xs text-yonam-gray font-medium mt-0.5">
+                  ${item.mentorRole}
+                </p>
+              </div>
+            </div>
+
+            ${rejectNoticeBox}
+
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80 mb-5">
+              <p class="text-xs sm:text-sm text-slate-700 font-medium line-clamp-2 leading-relaxed">
+                <span class="font-bold text-lg-red mr-1">Q.</span> ${item.q1}
+              </p>
+            </div>
+
+            <div class="flex items-center justify-end pt-2 border-t border-slate-100 flex-wrap gap-3">
+              ${actionButtons}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== MODAL ACTIONS ====================
+    // 1. 상세보기 모달
+    function openRequestDetailModal(id) {
+      const item = myMentoringList.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('detail-modal-mentor-avatar').src = item.mentorAvatar;
+      document.getElementById('detail-modal-mentor-name').textContent = `${item.mentorName} 멘토`;
+      document.getElementById('detail-modal-mentor-company').textContent = `${item.mentorCompany} · ${item.mentorRole}`;
+      document.getElementById('detail-modal-applied-at').textContent = `${item.appliedAt}`;
+      
+      const badgeEl = document.getElementById('detail-modal-status-badge');
+      if (item.status === 'pending') {
+        badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200';
+        badgeEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left text-[10px]"></i> 멘토 확인 대기';
+      } else if (item.status === 'in_progress') {
+        badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200';
+        badgeEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[10px]"></i> 답변 작성중';
+      } else if (item.status === 'completed') {
+        badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        badgeEl.innerHTML = '<i class="fa-solid fa-circle-check text-[10px]"></i> 답변 완료';
+      } else if (item.status === 'rejected') {
+        badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200';
+        badgeEl.innerHTML = '<i class="fa-solid fa-user-xmark text-[10px]"></i> 답변 거절됨';
+      }
+
+      const rejectWrapper = document.getElementById('detail-modal-reject-wrapper');
+      const rejectReasonEl = document.getElementById('detail-modal-reject-reason');
+      if (item.status === 'rejected') {
+        if (rejectWrapper) rejectWrapper.classList.remove('hidden');
+        if (rejectReasonEl) rejectReasonEl.textContent = `"${item.rejectReason || '현재 개인 일정 및 직무 업무 과중으로 답변이 어렵습니다.'}"`;
+      } else {
+        if (rejectWrapper) rejectWrapper.classList.add('hidden');
+      }
+
+      document.getElementById('detail-modal-effort').textContent = item.effort;
+      document.getElementById('detail-modal-q1').textContent = item.q1;
+      document.getElementById('detail-modal-q2').textContent = item.q2;
+
+      const attachEl = document.getElementById('detail-modal-attachment');
+      if (item.attachmentName) {
+        attachEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-file-pdf text-red-500 text-base"></i>
+            <div>
+              <span class="font-bold block text-slate-800">${item.attachmentName}</span>
+              <span class="text-[11px] text-slate-400 font-medium">${item.attachmentSize || '파일'}</span>
+            </div>
+          </div>
+          <button onclick="showToast('첨부파일 (${item.attachmentName}) 다운로드가 시작되었습니다.')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold transition">
+            <i class="fa-solid fa-download mr-1"></i> 다운로드
+          </button>
+        `;
+      } else {
+        attachEl.innerHTML = `<span class="text-slate-400 italic">등록된 첨부파일이 없습니다.</span>`;
+      }
+
+      const actionEl = document.getElementById('detail-modal-action-buttons');
+      if (item.status === 'pending') {
+        actionEl.innerHTML = `
+          <button onclick="closeRequestDetailModal(); openEditRequestModal('${item.id}')" class="px-4 py-2.5 bg-[#4587A3] text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-[#346a82] transition shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-pen-to-square"></i> 질문 수정하기
+          </button>
+        `;
+      } else if (item.status === 'completed') {
+        actionEl.innerHTML = `
+          <button onclick="closeRequestDetailModal(); openAnswerModal('${item.id}')" class="px-4 py-2.5 bg-[#4587A3] text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-[#346a82] transition shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-envelope-open-text"></i> 멘토 답변 보기
+          </button>
+        `;
+      } else if (item.status === 'rejected') {
+        actionEl.innerHTML = `
+          <button onclick="closeRequestDetailModal(); showListView()" class="px-4 py-2.5 bg-lg-red text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-[#A3002B] transition shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-magnifying-glass"></i> 다른 동문 멘토 찾기
+          </button>
+        `;
+      } else {
+        actionEl.innerHTML = '';
+      }
+
+      document.getElementById('request-detail-modal').classList.remove('hidden');
+    }
+
+    function closeRequestDetailModal() {
+      document.getElementById('request-detail-modal').classList.add('hidden');
+    }
+
+    // 2. 수정 모달 (apply-modal 연동)
+    function openEditRequestModal(id) {
+      const item = myMentoringList.find(i => i.id === id);
+      if (!item) return;
+
+      editingRequestId = id;
+
+      const modalTitle = document.querySelector('#apply-modal h3');
+      if (modalTitle) modalTitle.textContent = '1:1 멘토링 신청 수정';
+      
+      const mentorNameEl = document.getElementById('modal-mentor-name');
+      if (mentorNameEl) mentorNameEl.textContent = `${item.mentorName} 멘토님 (${item.mentorCompany} ${item.mentorRole})`;
+
+      const submitBtn = document.querySelector('#apply-modal button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = '저장하기';
+
+      document.getElementById('apply-input-effort').value = item.effort;
+      document.getElementById('apply-input-q1').value = item.q1;
+      document.getElementById('apply-input-q2').value = item.q2;
+
+      validateEffortInput();
+
+      document.getElementById('apply-modal').classList.remove('hidden');
+    }
+
+    function openApplyModal() {
+      if (!currentUser) {
+        alert('1:1 멘토링을 신청하려면 먼저 로그인이 필요합니다.');
+        showLoginModal('mentee');
+        return;
+      }
+
+      editingRequestId = null;
+
+      const modalTitle = document.querySelector('#apply-modal h3');
+      if (modalTitle) modalTitle.textContent = '1:1 멘토링 신청';
+
+      const submitBtn = document.querySelector('#apply-modal button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = '신청 완료';
+
+      if (selectedMentor) {
+        document.getElementById('modal-mentor-name').textContent = `${selectedMentor.name} 선배님 (${selectedMentor.company} ${selectedMentor.role})`;
+      } else {
+        document.getElementById('modal-mentor-name').textContent = '';
+      }
+
+      document.getElementById('apply-input-effort').value = '';
+      document.getElementById('apply-input-q1').value = '';
+      document.getElementById('apply-input-q2').value = '';
+      validateEffortInput();
+
+      document.getElementById('apply-modal').classList.remove('hidden');
+    }
+
+    function closeApplyModal() {
+      document.getElementById('apply-modal').classList.add('hidden');
+    }
+
+    // 3. 답변 보기 모달
+    function openAnswerModal(id) {
+      let item = myMentoringList.find(i => i.id === id);
+      if (!item) {
+        item = myMentoringList.find(i => i.status === 'completed');
+      }
+      if (!item) return;
+
+      const avatarEl = document.getElementById('answer-modal-mentor-avatar');
+      if (avatarEl) avatarEl.src = item.mentorAvatar || '';
+
+      const nameEl = document.getElementById('answer-modal-mentor-name');
+      if (nameEl) nameEl.textContent = `${item.mentorName || ''} 멘토`;
+
+      const companyEl = document.getElementById('answer-modal-mentor-company');
+      if (companyEl) companyEl.textContent = `${item.mentorCompany || ''} · ${item.mentorRole || ''}`;
+
+      const dateEl = document.getElementById('answer-modal-date');
+      if (dateEl) dateEl.textContent = (item.answer && item.answer.date) ? `${item.answer.date} 작성됨` : `${item.appliedAt} 완료됨`;
+
+      const contentEl = document.getElementById('answer-modal-content');
+      if (contentEl) contentEl.textContent = (item.answer && item.answer.content) ? item.answer.content : '등록된 멘토 답변 내용이 없습니다.';
+
+      const attachEl = document.getElementById('answer-modal-attachment');
+      if (attachEl) {
+        if (item.answer && item.answer.attachmentName) {
+          attachEl.innerHTML = `
+            <div class="flex items-center gap-2.5">
+              <i class="fa-solid fa-file-pdf text-red-500 text-lg"></i>
+              <div>
+                <span class="font-bold text-slate-800 block">${item.answer.attachmentName}</span>
+                <span class="text-[11px] text-slate-400 font-medium">${item.answer.attachmentSize || '자료 파일'}</span>
+              </div>
+            </div>
+            <button onclick="showToast('멘토 자료 (${item.answer.attachmentName}) 다운로드가 시작되었습니다.')" class="px-3.5 py-1.5 bg-[#4587A3] hover:bg-[#346a82] text-white rounded-lg font-bold text-xs transition shadow-xs">
+              <i class="fa-solid fa-download mr-1"></i> 다운로드
+            </button>
+          `;
+        } else {
+          attachEl.innerHTML = `<span class="text-slate-400 italic">첨부된 자료 파일이 없습니다.</span>`;
+        }
+      }
+
+      const effortEl = document.getElementById('answer-modal-my-effort');
+      if (effortEl) effortEl.textContent = item.effort || '등록된 내용이 없습니다.';
+
+      const q1El = document.getElementById('answer-modal-my-q1');
+      if (q1El) q1El.textContent = item.q1 || '등록된 내용이 없습니다.';
+      
+      const q2Wrapper = document.getElementById('answer-modal-q2-wrapper');
+      const q2El = document.getElementById('answer-modal-my-q2');
+      if (item.q2 && item.q2.trim()) {
+        if (q2Wrapper) q2Wrapper.classList.remove('hidden');
+        if (q2El) q2El.textContent = item.q2;
+      } else {
+        if (q2Wrapper) q2Wrapper.classList.add('hidden');
+      }
+
+      const modal = document.getElementById('answer-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeAnswerModal() {
+      const modal = document.getElementById('answer-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // 4. 신청 취소 모달
+    function confirmCancelRequest(id) {
+      deletingRequestId = id;
+      document.getElementById('cancel-confirm-modal').classList.remove('hidden');
+    }
+
+    function closeCancelModal() {
+      deletingRequestId = null;
+      document.getElementById('cancel-confirm-modal').classList.add('hidden');
+    }
+
+    function executeCancelRequest() {
+      if (!deletingRequestId) return;
+      myMentoringList = myMentoringList.filter(item => item.id !== deletingRequestId);
+      localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
+      closeCancelModal();
+      showToast('멘토링 신청이 취소되었습니다.');
+      renderMypageTabs();
+      renderMypageCards();
+      updateNavHighlight('mypage');
+    }
+
+    // Real-time validation for 50+ chars effort input
+    function validateEffortInput() {
+      const textarea = document.getElementById('apply-input-effort');
+      const errorMsg = document.getElementById('effort-error-msg');
+      const counter = document.getElementById('effort-char-counter');
+      if (!textarea || !counter || !errorMsg) return;
+
+      const len = textarea.value.trim().length;
+      counter.textContent = `${len} / 50자 이상`;
+
+      if (len === 0) {
+        textarea.classList.remove('border-red-500', 'focus:border-red-500', 'border-emerald-500');
+        textarea.classList.add('border-slate-300');
+        errorMsg.classList.add('hidden');
+        counter.classList.remove('text-red-500', 'text-emerald-600');
+        counter.classList.add('text-slate-400');
+      } else if (len < 50) {
+        textarea.classList.remove('border-slate-300', 'border-emerald-500');
+        textarea.classList.add('border-red-500', 'focus:border-red-500');
+        errorMsg.classList.remove('hidden');
+        counter.classList.remove('text-slate-400', 'text-emerald-600');
+        counter.classList.add('text-red-500');
+      } else {
+        textarea.classList.remove('border-red-500', 'focus:border-red-500');
+        textarea.classList.add('border-slate-300');
+        errorMsg.classList.add('hidden');
+        counter.classList.remove('text-slate-400', 'text-red-500');
+        counter.classList.add('text-emerald-600');
+      }
+    }
+
+    function submitApplyForm(e) {
+      e.preventDefault();
+      const effortEl = document.getElementById('apply-input-effort');
+      const q1El = document.getElementById('apply-input-q1');
+      const q2El = document.getElementById('apply-input-q2');
+      const len = effortEl ? effortEl.value.trim().length : 0;
+
+      if (len < 50) {
+        validateEffortInput();
+        if (effortEl) effortEl.focus();
+        return;
+      }
+
+      if (editingRequestId) {
+        const item = myMentoringList.find(i => i.id === editingRequestId);
+        if (item) {
+          item.effort = effortEl.value.trim();
+          item.q1 = q1El ? q1El.value.trim() : item.q1;
+          item.q2 = q2El ? q2El.value.trim() : item.q2;
+        }
+        localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
+        closeApplyModal();
+        showToast('멘토링 신청 질문이 성공적으로 수정되었습니다.');
+        editingRequestId = null;
+        renderMypageCards();
+        renderMypageTabs();
+      } else {
+        const todayStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const newReq = {
+          id: 'req-' + Date.now(),
+          mentorId: selectedMentor ? selectedMentor.id : 1,
+          mentorName: selectedMentor ? selectedMentor.name : '동문 멘토',
+          mentorCompany: selectedMentor ? selectedMentor.company : '연암공과대학교',
+          mentorRole: selectedMentor ? selectedMentor.role : '동문 멘토',
+          mentorAvatar: selectedMentor ? selectedMentor.avatar : 'logo.png',
+          studentName: currentUser ? currentUser.name : '김철수',
+          department: currentUser ? currentUser.major : '기계공학과',
+          studentId: currentUser ? currentUser.studentId : '20241234',
+          grade: '2학년',
+          status: 'pending',
+          appliedAt: `${todayStr} 접수`,
+          effort: effortEl.value.trim(),
+          q1: q1El ? q1El.value.trim() : '',
+          q2: q2El ? q2El.value.trim() : '',
+          answer: null
+        };
+        myMentoringList.unshift(newReq);
+        localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
+        if (selectedMentor) {
+          localStorage.setItem('yonam_selected_mentor', JSON.stringify(selectedMentor));
+        }
+        closeApplyModal();
+        showToast('멘토링 신청이 성공적으로 전달되었습니다! 멘토 확인 후 안내됩니다.');
+        renderMypageCards();
+        renderMypageTabs();
+        updateNavHighlight(document.getElementById('view-mypage').classList.contains('hidden') ? 'mentors' : 'mypage');
+      }
+
+      if (effortEl) effortEl.value = '';
+      if (q1El) q1El.value = '';
+      if (q2El) q2El.value = '';
+      validateEffortInput();
+    }
+
+    function fillMenteeLogin(major, studentId, name) {
+      document.getElementById('login-major').value = major;
+      document.getElementById('login-student-id').value = studentId;
+      document.getElementById('login-name').value = name;
+    }
+
+    function fillMentorLogin(major, studentId, name) {
+      document.getElementById('login-mentor-major').value = major;
+      document.getElementById('login-mentor-id').value = studentId;
+      document.getElementById('login-mentor-name').value = name;
+    }
+
+    let currentLoginRole = 'mentee';
+
+    function switchLoginRole(role) {
+      currentLoginRole = role;
+      const menteeTab = document.getElementById('tab-role-mentee');
+      const mentorTab = document.getElementById('tab-role-mentor');
+      const menteeFields = document.getElementById('login-mentee-fields');
+      const mentorFields = document.getElementById('login-mentor-fields');
+
+      if (!menteeTab || !mentorTab || !menteeFields || !mentorFields) return;
+
+      if (role === 'mentee') {
+        menteeTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-lg-red border-b-2 border-lg-red transition cursor-pointer';
+        mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer';
+        menteeFields.classList.remove('hidden');
+        mentorFields.classList.add('hidden');
+      } else {
+        mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-lg-red border-b-2 border-lg-red transition cursor-pointer';
+        menteeTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer';
+        mentorFields.classList.remove('hidden');
+        menteeFields.classList.add('hidden');
+      }
+    }
+
+    function showLoginModal(role = 'mentee') {
+      switchLoginRole(role);
+      document.getElementById('login-modal').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    function checkLoginStatus() {
+      const savedUser = localStorage.getItem('yonam_user');
+      if (!savedUser) return;
+      try {
+        currentUser = JSON.parse(savedUser);
+        if (!currentUser) return;
+        
+        document.getElementById('btn-login-open').classList.add('hidden');
+        document.getElementById('logged-in-profile').classList.remove('hidden');
+        document.getElementById('logged-in-profile').classList.add('flex');
+
+        if (currentUser.role === 'mentee') {
+          document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-graduate"></i>';
+          document.getElementById('user-display-name').textContent = `${currentUser.name} 님`;
+          document.getElementById('user-display-info').textContent = `${currentUser.major} ${currentUser.studentId}`;
+
+          const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
+          if (mentorBtn) {
+            mentorBtn.classList.add('hidden');
+            mentorBtn.classList.remove('flex');
+          }
+          const mypageBtn = document.getElementById('nav-btn-mypage');
+          if (mypageBtn) {
+            mypageBtn.classList.remove('hidden');
+            mypageBtn.classList.add('flex');
+          }
+        } else if (currentUser.role === 'mentor') {
+          document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-tie"></i>';
+          document.getElementById('user-display-name').textContent = `${currentUser.name} 멘토님`;
+          document.getElementById('user-display-info').textContent = `${currentUser.major} ${currentUser.studentId} | ${currentUser.company || ''}`;
+
+          const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
+          if (mentorBtn) {
+            mentorBtn.classList.remove('hidden');
+            mentorBtn.classList.add('flex');
+          }
+          const mypageBtn = document.getElementById('nav-btn-mypage');
+          if (mypageBtn) {
+            mypageBtn.classList.add('hidden');
+            mypageBtn.classList.remove('flex');
+          }
+        }
+      } catch (e) {
+        console.error("Login status parse error:", e);
+      }
+    }
+
+    // Handle Login Form Submission (Mentee vs Mentor)
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+
+      if (currentLoginRole === 'mentee') {
+        const major = document.getElementById('login-major').value;
+        const studentId = document.getElementById('login-student-id').value.trim();
+        const name = document.getElementById('login-name').value.trim();
+
+        if (!major || !studentId || !name) {
+          alert('학과, 학번, 이름을 모두 입력해주세요.');
+          return;
+        }
+
+        if (studentId.length !== 8 || isNaN(studentId)) {
+          alert('학번은 8자리 숫자로 입력해 주세요. (예: 20241234)');
+          return;
+        }
+
+        currentUser = { role: 'mentee', major, studentId, name };
+        localStorage.setItem('yonam_user', JSON.stringify(currentUser));
+
+        document.getElementById('btn-login-open').classList.add('hidden');
+        document.getElementById('logged-in-profile').classList.remove('hidden');
+        document.getElementById('logged-in-profile').classList.add('flex');
+        
+        document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-graduate"></i>';
+        document.getElementById('user-display-name').textContent = `${name} 님`;
+        document.getElementById('user-display-info').textContent = `${major} ${studentId}`;
+
+        // Hide Mentor Dashboard button for Mentee
+        const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
+        if (mentorBtn) {
+          mentorBtn.classList.add('hidden');
+          mentorBtn.classList.remove('flex');
+        }
+
+        closeLoginModal();
+        showToast(`${major} ${studentId} ${name} 님, 환영합니다!`);
+
+        updateNavHighlight(document.getElementById('view-mypage').classList.contains('hidden') ? 'mentors' : 'mypage');
+      } else {
+        // Mentor Login logic
+        const mentorMajor = document.getElementById('login-mentor-major').value;
+        const mentorId = document.getElementById('login-mentor-id').value.trim();
+        const mentorName = document.getElementById('login-mentor-name').value.trim();
+
+        if (!mentorMajor || !mentorId || !mentorName) {
+          alert('멘토 학과, 학번, 이름을 모두 입력해주세요.');
+          return;
+        }
+
+        if (mentorId.length !== 8 || isNaN(mentorId)) {
+          alert('학번은 8자리 숫자로 입력해 주세요. (예: 12345678)');
+          return;
+        }
+
+        const foundMentor = MENTORS.find(m => m.name === mentorName);
+        const company = foundMentor ? foundMentor.company : '연암공과대학교';
+
+        currentUser = { role: 'mentor', major: mentorMajor, studentId: mentorId, name: mentorName, company };
+        localStorage.setItem('yonam_user', JSON.stringify(currentUser));
+
+        document.getElementById('btn-login-open').classList.add('hidden');
+        document.getElementById('logged-in-profile').classList.remove('hidden');
+        document.getElementById('logged-in-profile').classList.add('flex');
+
+        document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-tie"></i>';
+        document.getElementById('user-display-name').textContent = `${mentorName} 멘토님`;
+        document.getElementById('user-display-info').textContent = `${mentorMajor} ${mentorId} | ${company}`;
+
+        // 멘토가 로그인하면 멘토 질문 관리가 상단 로그인 옆에 보여짐
+        const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
+        if (mentorBtn) {
+          mentorBtn.classList.remove('hidden');
+          mentorBtn.classList.add('flex');
+        }
+
+        // 멘토 로그인 시 '나의 멘토링 내역' 버튼은 숨김
+        const mypageBtn = document.getElementById('nav-btn-mypage');
+        if (mypageBtn) {
+          mypageBtn.classList.add('hidden');
+          mypageBtn.classList.remove('flex');
+        }
+
+        closeLoginModal();
+        showToast(`${mentorMajor} ${mentorId} ${mentorName} 멘토님, 환영합니다! '멘토 질문 관리'가 상단에 표시됩니다.`);
+      }
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      localStorage.removeItem('yonam_user');
+      document.getElementById('btn-login-open').classList.remove('hidden');
+      document.getElementById('logged-in-profile').classList.add('hidden');
+      document.getElementById('logged-in-profile').classList.remove('flex');
+
+      const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
+      if (mentorBtn) {
+        mentorBtn.classList.add('hidden');
+        mentorBtn.classList.remove('flex');
+      }
+
+      const mypageBtn = document.getElementById('nav-btn-mypage');
+      if (mypageBtn) {
+        mypageBtn.classList.add('hidden');
+        mypageBtn.classList.remove('flex');
+      }
+
+      showToast('로그아웃 되었습니다.');
+
+      // 로그아웃 시 메인 멘토 목록 화면으로 전환
+      showListView();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 3500);
+    }
+  </script>
+
+</body>
+</html>

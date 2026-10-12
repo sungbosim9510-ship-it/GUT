@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멘토 전용 답변 작성 | 연암공과대학교 커리어 멘토링</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    
+    :root {
+      --lg-red: #C30034;
+      --lg-red-hover: #A3002B;
+      --yonam-blue: #5FA3BF;
+      --yonam-blue-dark: #4587A3;
+      --yonam-gray: #6B6B6B;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    .bg-lg-red { background-color: #C30034; }
+    .text-lg-red { color: #C30034; }
+    .border-lg-red { border-color: #C30034; }
+    
+    .bg-yonam-blue { background-color: #5FA3BF; }
+    .text-yonam-blue { color: #5FA3BF; }
+    .border-yonam-blue { border-color: #5FA3BF; }
+
+    .bg-yonam-blue-dark { background-color: #4587A3; }
+    .hover\:bg-yonam-blue-dark:hover { background-color: #387189; }
+
+    .text-yonam-gray { color: #6B6B6B; }
+
+    /* Custom Toast Animation */
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-down {
+      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- TOP ALERT NOTIFICATION BANNER (임시저장 및 상태 메시지용) -->
+  <div id="top-notification" class="hidden fixed top-0 left-0 right-0 z-50 p-4 text-center text-sm font-bold text-white bg-slate-900/90 backdrop-blur-md shadow-xl transition-all duration-300 animate-slide-down flex items-center justify-center gap-2">
+    <i id="top-notif-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+    <span id="top-notif-text">작성 중인 내용이 임시 저장되었습니다.</span>
+  </div>
+
+  <!-- GNB NAV HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 py-2 flex items-center justify-between gap-4">
+      <!-- Logo & Campus Name -->
+      <a href="index.html" class="flex items-center space-x-3 shrink-0">
+        <img src="logo.png" alt="연암공과대학교 로고" class="h-9 w-auto object-contain">
+        <div class="border-l-2 border-slate-200 pl-3 hidden sm:block">
+          <span class="font-bold text-base text-slate-900 tracking-tight block leading-tight">
+            <span class="text-lg-red font-black">CAREER</span> <span class="text-yonam-blue font-bold">MENTORING</span>
+          </span>
+          <span class="text-[11px] text-yonam-gray block font-medium">동문 멘토 전용 답변 작성</span>
+        </div>
+      </a>
+
+      <!-- Right Header Actions (멘토 상태 및 돌아가기) -->
+      <div class="flex items-center space-x-3">
+        <div class="hidden sm:flex items-center gap-2.5 bg-slate-100/90 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs">
+          <div class="w-6 h-6 rounded-full bg-[#4587A3] text-white flex items-center justify-center font-bold text-[11px]">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <span class="font-bold text-slate-800 block leading-tight" id="answer-mentor-name">동문 멘토님</span>
+            <span class="text-[10px] text-slate-500 block" id="answer-mentor-info">연암공과대학교 동문</span>
+          </div>
+        </div>
+
+        <a href="mentor-dashboard.html" class="text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-slate-500"></i> 질문 목록 대시보드
+        </a>
+        <a href="index.html" class="text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-house text-slate-400"></i> 메인 홈
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE TITLE & BREADCRUMB BAR -->
+  <section class="bg-white border-b border-slate-200/80 py-4 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-red-50 text-lg-red border border-red-100 flex items-center justify-center font-bold text-lg shrink-0">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            배정 학생 멘토링 답변 작성
+            <span id="badge-status-top" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+              <i class="fa-solid fa-clock"></i> 답변 대기 중 (마감 D-7)
+            </span>
+          </h1>
+          <p class="text-xs text-yonam-gray">후배의 커리어 고민에 실무 경험 바탕의 따뜻하고 현실적인 피드백을 전달해주세요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT SPLIT SCREEN CONTAINER (비율 4:6) -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    
+    <!-- SPLIT SCREEN GRID: Left (4/10) vs Right (6/10) -->
+    <div class="grid grid-cols-1 lg:grid-cols-10 gap-6 lg:gap-8 items-start">
+
+      <!-- ========================================================================= -->
+      <!-- [좌측 패널: 학생 질문 상세 정보] (비율 4 / 10) -->
+      <!-- ========================================================================= -->
+      <section class="lg:col-span-4 space-y-5">
+        
+        <!-- 1. 상단 학생 요약 카드 -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50/80 to-transparent rounded-bl-full pointer-events-none"></div>
+
+          <!-- Header & Profile Badge -->
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-3">
+              <!-- 프로필 뱃지 -->
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200/80">
+                <i class="fa-solid fa-user-graduate text-lg-red"></i>
+                <span id="text-student-info">배정 학생 정보</span>
+              </span>
+
+              <!-- 상태 표시 -->
+              <span id="badge-status-card" class="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 flex items-center gap-1">
+                <i class="fa-solid fa-hourglass-half"></i> D-7
+              </span>
+            </div>
+
+
+            <!-- 신청일 및 상태 요약 -->
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+              <span class="flex items-center gap-1">
+                <i class="fa-regular fa-calendar-check text-slate-400"></i> 신청일: <strong class="text-slate-700 font-semibold">2026.10.08</strong>
+              </span>
+              <span id="text-status-summary" class="font-bold text-amber-600">답변 대기 중</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 학생의 고민 및 현재 상황 (연한 회색 카드) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-comment-dots text-slate-600"></i>
+            학생의 고민 및 현재 상황
+          </h3>
+          
+          <!-- 배경 박스 (연한 회색 카드) -->
+          <div class="bg-slate-100/80 border border-slate-200/90 rounded-xl p-4 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2">
+            <p id="student-effort-text" class="whitespace-pre-line font-normal text-slate-800">
+              등록된 고민 내용이 없습니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 3. 핵심 질문 2가지 (파란색 테두리 강조 카드) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3.5">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-circle-question text-yonam-blue"></i>
+              선배님께 묻는 핵심 질문 (2가지)
+            </span>
+            <span class="text-[11px] font-semibold text-yonam-blue bg-blue-50 px-2 py-0.5 rounded-full">필수 답변</span>
+          </h3>
+
+          <!-- Q1 카드 (파란색 테두리 강조) -->
+          <div class="border-2 border-[#5FA3BF] bg-blue-50/30 rounded-xl p-4 shadow-xs transition hover:shadow-sm">
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="bg-[#5FA3BF] text-white text-xs font-black px-2 py-0.5 rounded-md">Q1</span>
+              <span class="text-xs font-bold text-[#4587A3]">핵심 질문 1</span>
+            </div>
+            <p id="student-q1-text" class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+              등록된 핵심 질문 1이 없습니다.
+            </p>
+          </div>
+
+          <!-- Q2 카드 (파란색 테두리 강조) -->
+          <div class="border-2 border-[#5FA3BF] bg-blue-50/30 rounded-xl p-4 shadow-xs transition hover:shadow-sm">
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="bg-[#5FA3BF] text-white text-xs font-black px-2 py-0.5 rounded-md">Q2</span>
+              <span class="text-xs font-bold text-[#4587A3]">핵심 질문 2</span>
+            </div>
+            <p id="student-q2-text" class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+              등록된 핵심 질문 2가 없습니다.
+            </p>
+          </div>
+        </div>
+
+
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- [우측 패널: 멘토 답변 작성 에디터] (비율 6 / 10) -->
+      <!-- ========================================================================= -->
+      <section class="lg:col-span-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm relative">
+          
+          <!-- 1. 상단 타이틀 & 도움말 문구 -->
+          <div class="border-b border-slate-200 pb-5 mb-6">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <i class="fa-solid fa-feather-pointed text-lg-red"></i>
+                후배를 위한 커리어 조언 작성
+              </h2>
+              <span class="text-xs font-semibold px-2.5 py-1 bg-red-50 text-lg-red rounded-full border border-red-100">
+                작성 양식
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              선배님의 실제 취업 및 실무 경험을 바탕으로 현실적인 조언을 적어주세요.
+            </p>
+          </div>
+
+          <!-- COMPLETED VIEW CONTAINER (답변 등록 완료 후 표시될 읽기 전용 상태) -->
+          <div id="completed-view-container" class="hidden mb-6 bg-emerald-50/80 border-2 border-emerald-500/80 rounded-2xl p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-md">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div class="space-y-1">
+                <h3 class="text-lg font-extrabold text-emerald-900">답변 등록 완료</h3>
+                <p class="text-xs sm:text-sm text-emerald-800 leading-relaxed font-medium">
+                  답변이 성공적으로 전달되었습니다! 학생이 등록된 선배님의 답변을 확인하고 실무 취업 준비에 큰 도움을 받게 됩니다.
+                </p>
+                <div class="pt-2 text-xs text-emerald-700 font-semibold">
+                  제출 완료 일시: <span id="completed-date-time">2026.10.08 15:30</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 답변 입력 폼 -->
+          <form id="mentor-answer-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
+            
+            <!-- [질문 1에 대한 피드백] -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label for="input-q1" class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <span class="bg-[#5FA3BF] text-white text-xs font-bold px-2 py-0.5 rounded">Q1</span>
+                  [질문 1에 대한 피드백] <span class="text-red-500">*</span>
+                </label>
+                <span id="counter-q1" class="text-xs text-slate-400 font-medium">0자</span>
+              </div>
+              <textarea 
+                id="input-q1" 
+                required 
+                style="height: 150px;" 
+                oninput="updateCharCount('input-q1', 'counter-q1')"
+                placeholder="질문 1에 대한 선배님의 경험과 조언을 작성해주세요." 
+                class="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4587A3] focus:ring-3 focus:ring-blue-100 transition leading-relaxed resize-y"
+              ></textarea>
+            </div>
+
+            <!-- [질문 2에 대한 피드백] -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label for="input-q2" class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <span class="bg-[#5FA3BF] text-white text-xs font-bold px-2 py-0.5 rounded">Q2</span>
+                  [질문 2에 대한 피드백] <span class="text-xs font-normal text-slate-400">(선택 사항)</span>
+                </label>
+                <span id="counter-q2" class="text-xs text-slate-400 font-medium">0자</span>
+              </div>
+              <textarea 
+                id="input-q2" 
+                style="height: 150px;" 
+                oninput="updateCharCount('input-q2', 'counter-q2')"
+                placeholder="질문 2에 대한 실무 팁과 대처 방법을 작성해주세요. (선택 사항)" 
+                class="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4587A3] focus:ring-3 focus:ring-blue-100 transition leading-relaxed resize-y"
+              ></textarea>
+            </div>
+
+            <!-- [선배의 따뜻한 응원 한마디 / 총평] (선택 사항) -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label for="input-cheer" class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-heart text-lg-red"></i>
+                  [선배의 따뜻한 응원 한마디 / 총평] <span class="text-xs font-normal text-slate-400">(선택 사항)</span>
+                </label>
+                <span id="counter-cheer" class="text-xs text-slate-400 font-medium">0자</span>
+              </div>
+              <textarea 
+                id="input-cheer" 
+                style="height: 100px;" 
+                oninput="updateCharCount('input-cheer', 'counter-cheer')"
+                placeholder="후배에게 전하고 싶은 격려나 추천 활동을 적어주세요." 
+                class="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4587A3] focus:ring-3 focus:ring-blue-100 transition leading-relaxed resize-y"
+              ></textarea>
+            </div>
+
+
+            <!-- 4. 하단 액션 버튼 그룹 -->
+            <div class="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              
+              <!-- 좌측: 정중히 거절하기 (빨간색 텍스트 링크) -->
+              <div class="w-full sm:w-auto text-center sm:text-left">
+                <button 
+                  type="button" 
+                  id="btn-reject-trigger"
+                  onclick="openRejectModal()" 
+                  class="text-xs sm:text-sm font-semibold text-red-600 hover:text-red-800 underline transition cursor-pointer inline-flex items-center gap-1"
+                >
+                  <i class="fa-solid fa-user-xmark"></i>
+                  답변이 어려운 경우 정중히 거절하기
+                </button>
+              </div>
+
+              <!-- 우측: [임시 저장] + [답변 등록 완료] 버튼 -->
+              <div id="action-buttons-group" class="w-full sm:w-auto flex items-center gap-3">
+                <button 
+                  type="button" 
+                  id="btn-save-draft"
+                  onclick="handleSaveDraft()" 
+                  class="w-1/2 sm:w-auto px-5 py-3 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 text-xs sm:text-sm font-bold shadow-2xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <i class="fa-regular fa-floppy-disk text-slate-500"></i>
+                  임시 저장
+                </button>
+
+                <button 
+                  type="submit" 
+                  id="btn-submit-final"
+                  class="w-1/2 sm:w-auto px-6 py-3 rounded-xl bg-yonam-blue-dark hover:bg-yonam-blue-dark text-white text-xs sm:text-sm font-extrabold shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <i class="fa-solid fa-paper-plane"></i>
+                  답변 등록 완료
+                </button>
+              </div>
+
+            </div>
+
+          </form>
+
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-yonam-gray mt-12">
+    <div class="max-w-7xl mx-auto px-4">
+      <p class="font-semibold text-slate-600 mb-1">연암공과대학교 커리어 멘토링 센터</p>
+      <p>© 2026 Yonam Institute of Technology Alumni Mentor Network. All rights reserved.</p>
+    </div>
+  </footer>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 답변 등록 확인 팝업 모달 -->
+  <!-- ========================================================================= -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative animate-slide-down">
+      <button type="button" onclick="closeConfirmModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-blue-50 text-[#4587A3] flex items-center justify-center text-xl shrink-0 font-bold border border-blue-100">
+          <i class="fa-solid fa-circle-question"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">답변 등록 확인</h3>
+          <span class="text-xs text-slate-400">최종 답변 제출</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+        <p class="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+          답변을 등록하시겠습니까? 등록 후에는 수정할 수 없으며 학생에게 즉시 전송됩니다.
+        </p>
+      </div>
+
+      <div class="flex gap-3">
+        <button 
+          type="button" 
+          onclick="closeConfirmModal()" 
+          class="w-1/2 py-3 rounded-xl border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold hover:bg-slate-100 transition cursor-pointer"
+        >
+          취소
+        </button>
+        <button 
+          type="button" 
+          onclick="executeFinalSubmit()" 
+          class="w-1/2 py-3 rounded-xl bg-yonam-blue-dark hover:bg-yonam-blue-dark text-white text-xs sm:text-sm font-bold shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
+        >
+          <i class="fa-solid fa-check"></i>
+          확인 (등록)
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 답변 정중히 거절 모달 -->
+  <!-- ========================================================================= -->
+  <div id="reject-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+      <button type="button" onclick="closeRejectModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-xl shrink-0 font-bold border border-red-100">
+          <i class="fa-solid fa-user-xmark"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">멘토링 요청 거절</h3>
+          <span class="text-xs text-slate-400">정중한 거절 사유 선택</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+        일정이 바쁘시거나 전문 분야가 맞지 않는 경우 학생에게 양해 메시지와 함께 정중히 거절 처리를 진행할 수 있습니다.
+      </p>
+
+      <div class="space-y-3 mb-6">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">거절 사유 선택</label>
+          <select id="reject-reason-select" class="w-full p-3 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white focus:outline-none focus:border-red-500">
+            <option value="schedule">현재 개인 일정 및 직무 업무 과중으로 답변이 어렵습니다.</option>
+            <option value="domain">요청하신 질문 분야가 본인의 세부 전공/경력과 차이가 있습니다.</option>
+            <option value="other">기타 개인 사유</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button 
+          type="button" 
+          onclick="closeRejectModal()" 
+          class="w-1/2 py-3 rounded-xl border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold hover:bg-slate-100 transition cursor-pointer"
+        >
+          돌아가기
+        </button>
+        <button 
+          type="button" 
+          onclick="executeRejectSubmit()" 
+          class="w-1/2 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-bold shadow-md transition cursor-pointer"
+        >
+          정중히 거절 완료
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC & INTERACTION CONTROL -->
+  <!-- ========================================================================= -->
+  <script>
+    // State management
+    let pageState = 'PENDING'; // 'PENDING' | 'COMPLETED' | 'REJECTED'
+    let activeRequestId = null;
+
+    // On page initial load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMentorUser();
+      loadActiveRequest();
+      initDdayCalculation('2026.10.08');
+    });
+
+    function loadMentorUser() {
+      const savedUser = localStorage.getItem('yonam_user');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          if (user && user.name) {
+            const nameEl = document.getElementById('answer-mentor-name');
+            if (nameEl) nameEl.textContent = `${user.name} 멘토님`;
+            const infoEl = document.getElementById('answer-mentor-info');
+            if (infoEl) infoEl.textContent = `${user.major || '동문'} ${user.studentId || ''} | ${user.company || ''}`;
+          }
+        } catch(e) {}
+      }
+    }
+
+    function loadActiveRequest() {
+      // Clear legacy global keys to prevent pre-filling arbitrary dummy content
+      localStorage.removeItem('yonam_mentor_answer_draft');
+      localStorage.removeItem('yonam_mentor_answer_status');
+      localStorage.removeItem('yonam_mentor_completed_answer');
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const reqId = urlParams.get('id');
+
+      const raw = localStorage.getItem('yonam_mentoring_requests');
+      if (raw) {
+        try {
+          const list = JSON.parse(raw);
+          if (list && list.length > 0) {
+            const target = reqId ? list.find(r => r.id === reqId) : (list.find(r => r.status === 'pending' || r.status === 'in_progress') || list[0]);
+            if (target) {
+              activeRequestId = target.id;
+
+              // Header mentor profile match
+              if (target.mentorName) {
+                const nameEl = document.getElementById('answer-mentor-name');
+                if (nameEl) nameEl.textContent = `${target.mentorName} 멘토님`;
+                const infoEl = document.getElementById('answer-mentor-info');
+                if (infoEl) infoEl.textContent = `${target.mentorCompany || ''} ${target.mentorRole || ''}`;
+              }
+
+              const studentInfoEl = document.getElementById('text-student-info');
+              if (studentInfoEl) studentInfoEl.textContent = `${target.department || target.major || '학과'} ${target.grade || ''} | ${target.studentName || target.name || '학생'}`;
+
+              const effortEl = document.getElementById('student-effort-text');
+              if (effortEl) effortEl.textContent = target.effort || '등록된 고민 내용이 없습니다.';
+
+              const q1El = document.getElementById('student-q1-text');
+              if (q1El) q1El.textContent = target.q1 || '등록된 핵심 질문 1이 없습니다.';
+
+              const q2El = document.getElementById('student-q2-text');
+              if (q2El) q2El.textContent = target.q2 || '등록된 핵심 질문 2가 없습니다.';
+
+              // Reset textareas to blank by default for pending answer writing
+              const inputQ1 = document.getElementById('input-q1');
+              const inputQ2 = document.getElementById('input-q2');
+              const inputCheer = document.getElementById('input-cheer');
+
+              if (target.status === 'completed' && target.answer) {
+                if (inputQ1) inputQ1.value = target.answer.q1 || target.answer.content || '';
+                if (inputQ2) inputQ2.value = target.answer.q2 || '';
+                if (inputCheer) inputCheer.value = target.answer.cheer || '';
+                updateUIToCompletedState();
+              } else if (target.draft) {
+                if (inputQ1) inputQ1.value = target.draft.q1 || '';
+                if (inputQ2) inputQ2.value = target.draft.q2 || '';
+                if (inputCheer) inputCheer.value = target.draft.cheer || '';
+              } else {
+                if (inputQ1) inputQ1.value = '';
+                if (inputQ2) inputQ2.value = '';
+                if (inputCheer) inputCheer.value = '';
+              }
+
+              updateCharCount('input-q1', 'counter-q1');
+              updateCharCount('input-q2', 'counter-q2');
+              updateCharCount('input-cheer', 'counter-cheer');
+            }
+          }
+        } catch(e) {
+          console.error(e);
+        }
+      }
+    }
+
+    // 신청일 기준 7일 마감 기한 D-Day 계산 함수
+    function initDdayCalculation(appliedDateStr) {
+      const parts = appliedDateStr.split('.');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        
+        // 마감일 = 신청일 + 7일
+        const deadlineDate = new Date(year, month, day + 7);
+        
+        // 현재 날짜 (시/분/초 00:00:00으로 기준 통일)
+        const today = new Date();
+        const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const deadlineZero = new Date(deadlineDate.getFullYear(), deadlineDate.getMonth(), deadlineDate.getDate());
+        
+        const diffDays = Math.ceil((deadlineZero - todayZero) / (1000 * 60 * 60 * 24));
+        const dDayStr = diffDays >= 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`;
+
+        // UI에 D-Day 반영 (COMPLETED / REJECTED 상태가 아닐 때)
+        if (pageState === 'PENDING') {
+          const topBadge = document.getElementById('badge-status-top');
+          if (topBadge) {
+            topBadge.innerHTML = `<i class="fa-solid fa-clock"></i> 답변 대기 중 (마감 ${dDayStr})`;
+          }
+          const cardBadge = document.getElementById('badge-status-card');
+          if (cardBadge) {
+            cardBadge.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> ${dDayStr}`;
+          }
+        }
+      }
+    }
+
+    // Character counter function
+    function updateCharCount(inputId, counterId) {
+      const input = document.getElementById(inputId);
+      const counter = document.getElementById(counterId);
+      if (input && counter) {
+        const len = input.value.length;
+        counter.textContent = `${len.toLocaleString()}자`;
+      }
+    }
+
+    // Top notification display (Toast)
+    function showNotification(message, isError = false) {
+      const notif = document.getElementById('top-notification');
+      const text = document.getElementById('top-notif-text');
+      const icon = document.getElementById('top-notif-icon');
+
+      text.textContent = message;
+      if (isError) {
+        notif.className = "fixed top-0 left-0 right-0 z-50 p-4 text-center text-sm font-bold text-white bg-red-600 shadow-xl transition-all duration-300 animate-slide-down flex items-center justify-center gap-2";
+        icon.className = "fa-solid fa-circle-exclamation text-white text-lg";
+      } else {
+        notif.className = "fixed top-0 left-0 right-0 z-50 p-4 text-center text-sm font-bold text-white bg-slate-900/95 backdrop-blur-md shadow-xl transition-all duration-300 animate-slide-down flex items-center justify-center gap-2";
+        icon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+      }
+
+      notif.classList.remove('hidden');
+
+      setTimeout(() => {
+        notif.classList.add('hidden');
+      }, 3500);
+    }
+
+    // 1. [임시 저장] 클릭 처리
+    function handleSaveDraft() {
+      const q1 = document.getElementById('input-q1').value;
+      const q2 = document.getElementById('input-q2').value;
+      const cheer = document.getElementById('input-cheer').value;
+
+      const raw = localStorage.getItem('yonam_mentoring_requests');
+      if (raw && activeRequestId) {
+        try {
+          let list = JSON.parse(raw);
+          let target = list.find(r => r.id === activeRequestId);
+          if (target) {
+            target.status = 'in_progress';
+            target.draft = { q1, q2, cheer, savedAt: new Date().toISOString() };
+            localStorage.setItem('yonam_mentoring_requests', JSON.stringify(list));
+          }
+        } catch(e) {}
+      }
+      
+      showNotification("작성 중인 내용이 임시 저장되었습니다.");
+    }
+
+    // 2. Form submission trigger -> Opens confirmation modal
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const q1 = document.getElementById('input-q1').value.trim();
+
+      if (!q1) {
+        showNotification("필수 항목(질문 1 답변)을 입력해주세요.", true);
+        return;
+      }
+
+      openConfirmModal();
+    }
+
+    function openConfirmModal() {
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    }
+
+    // 3. Confirm Modal -> Final Submit Execution
+    function executeFinalSubmit() {
+      closeConfirmModal();
+
+      const q1 = document.getElementById('input-q1').value;
+      const q2 = document.getElementById('input-q2').value;
+      const cheer = document.getElementById('input-cheer').value;
+
+      const raw = localStorage.getItem('yonam_mentoring_requests');
+      if (raw) {
+        try {
+          let list = JSON.parse(raw);
+          let target = activeRequestId ? list.find(r => r.id === activeRequestId) : list[0];
+          if (target) {
+            target.status = 'completed';
+            delete target.draft;
+            target.completedAt = new Date().toLocaleDateString('ko-KR') + ' 답변 완료';
+            target.answer = {
+              date: new Date().toLocaleString('ko-KR'),
+              title: '멘토님의 1:1 멘토링 피드백 및 답변',
+              q1: q1,
+              q2: q2,
+              cheer: cheer,
+              content: `[질문 1 답변]\n${q1}\n\n[질문 2 답변]\n${q2}${cheer ? '\n\n[응원 한마디]\n' + cheer : ''}`
+            };
+            localStorage.setItem('yonam_mentoring_requests', JSON.stringify(list));
+          }
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      pageState = 'COMPLETED';
+      localStorage.setItem('yonam_just_submitted', 'true');
+
+      // 리다이렉트
+      window.location.href = 'mentor-dashboard.html?submitted=true';
+    }
+
+    // Update UI elements after submission
+    function updateUIToCompletedState() {
+      // 1. Top & Card Status badges change
+      const topBadge = document.getElementById('badge-status-top');
+      if (topBadge) {
+        topBadge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+        topBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> 답변 완료 (2026.10.08)';
+      }
+
+      const cardBadge = document.getElementById('badge-status-card');
+      if (cardBadge) {
+        cardBadge.className = "text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1";
+        cardBadge.innerHTML = '<i class="fa-solid fa-check text-emerald-600"></i> 완료됨';
+      }
+
+      const statusSummary = document.getElementById('text-status-summary');
+      if (statusSummary) {
+        statusSummary.className = "font-bold text-emerald-600";
+        statusSummary.textContent = "답변 완료됨";
+      }
+
+      // 2. Display completion banner container
+      const completedView = document.getElementById('completed-view-container');
+      if (completedView) completedView.classList.remove('hidden');
+      
+      const nowStr = new Date().toLocaleString('ko-KR', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+      const dateEl = document.getElementById('completed-date-time');
+      if (dateEl) dateEl.textContent = nowStr;
+
+      // 3. Make textareas read-only & style disabled
+      ['input-q1', 'input-q2', 'input-cheer'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.readOnly = true;
+          el.classList.add('bg-slate-100', 'text-slate-700', 'cursor-not-allowed');
+        }
+      });
+
+      // 4. Disable submit and draft action buttons
+      const draftBtn = document.getElementById('btn-save-draft');
+      if (draftBtn) {
+        draftBtn.disabled = true;
+        draftBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      
+      const submitBtn = document.getElementById('btn-submit-final');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.className = "w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-400 text-white text-xs sm:text-sm font-bold cursor-not-allowed flex items-center justify-center gap-2";
+        submitBtn.innerHTML = '<i class="fa-solid fa-check-double"></i> 답변 전송 완료됨';
+      }
+
+      const rejectBtn = document.getElementById('btn-reject-trigger');
+      if (rejectBtn) rejectBtn.classList.add('hidden');
+    }
+
+    // Modal: Reject logic
+    function openRejectModal() {
+      document.getElementById('reject-modal').classList.remove('hidden');
+    }
+
+    function closeRejectModal() {
+      document.getElementById('reject-modal').classList.add('hidden');
+    }
+
+    function executeRejectSubmit() {
+      closeRejectModal();
+      pageState = 'REJECTED';
+      
+      const select = document.getElementById('reject-reason-select');
+      const selectedReasonText = select ? select.options[select.selectedIndex].text : "현재 개인 일정 및 직무 업무 과중으로 답변이 어렵습니다.";
+
+      const raw = localStorage.getItem('yonam_mentoring_requests');
+      if (raw) {
+        try {
+          let list = JSON.parse(raw);
+          let target = activeRequestId ? list.find(r => r.id === activeRequestId) : list[0];
+          if (target) {
+            target.status = 'rejected';
+            target.rejectedAt = new Date().toLocaleDateString('ko-KR') + ' 답변 거절';
+            target.rejectReason = selectedReasonText;
+            localStorage.setItem('yonam_mentoring_requests', JSON.stringify(list));
+          }
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      localStorage.setItem('yonam_just_rejected', 'true');
+      window.location.href = 'mentor-dashboard.html?rejected=true';
+    }
+
+  </script>
+</body>
+</html>
