@@ -60,18 +60,10 @@
         </div>
       </div>
 
-      <!-- Right Header Actions (로그인 + 멘토 질문 관리 + 나의 멘토링 내역) -->
+      <!-- Right Header Actions (로그인 + 나의 멘토링 내역) -->
       <div class="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
         <!-- Auth State Section -->
         <div class="flex items-center space-x-3 shrink-0" id="auth-header-container">
-          <!-- 멘토 질문 관리 (멘토 로그인 시 표시) -->
-          <a
-            id="nav-btn-mentor-dashboard"
-            href="mentor-dashboard.html"
-            class="hidden text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl text-[#4587A3] bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-2xs transition items-center gap-1.5 cursor-pointer"
-          >
-            <i class="fa-solid fa-chart-line"></i> 멘토 질문 관리
-          </a>
           <button 
             id="btn-login-open"
             onclick="showLoginModal()" 
@@ -839,7 +831,7 @@
       }
     ];
 
-    // Default Mock Requests Seed (Matching mentor-dashboard.html)
+    // Default Mock Requests Seed
     const DEFAULT_MOCK_REQUESTS = [
       {
         id: 'req-1',
@@ -1835,11 +1827,6 @@
           document.getElementById('user-display-name').textContent = `${currentUser.name} 님`;
           document.getElementById('user-display-info').textContent = `${currentUser.major} ${currentUser.studentId}`;
 
-          const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
-          if (mentorBtn) {
-            mentorBtn.classList.add('hidden');
-            mentorBtn.classList.remove('flex');
-          }
           const mypageBtn = document.getElementById('nav-btn-mypage');
           if (mypageBtn) {
             mypageBtn.classList.remove('hidden');
@@ -1850,11 +1837,6 @@
           document.getElementById('user-display-name').textContent = `${currentUser.name} 멘토님`;
           document.getElementById('user-display-info').textContent = `${currentUser.major} ${currentUser.studentId} | ${currentUser.company || ''}`;
 
-          const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
-          if (mentorBtn) {
-            mentorBtn.classList.remove('hidden');
-            mentorBtn.classList.add('flex');
-          }
           const mypageBtn = document.getElementById('nav-btn-mypage');
           if (mypageBtn) {
             mypageBtn.classList.add('hidden');
@@ -1896,13 +1878,6 @@
         document.getElementById('user-display-name').textContent = `${name} 님`;
         document.getElementById('user-display-info').textContent = `${major} ${studentId}`;
 
-        // Hide Mentor Dashboard button for Mentee
-        const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
-        if (mentorBtn) {
-          mentorBtn.classList.add('hidden');
-          mentorBtn.classList.remove('flex');
-        }
-
         closeLoginModal();
         showToast(`${major} ${studentId} ${name} 님, 환영합니다!`);
 
@@ -1937,13 +1912,6 @@
         document.getElementById('user-display-name').textContent = `${mentorName} 멘토님`;
         document.getElementById('user-display-info').textContent = `${mentorMajor} ${mentorId} | ${company}`;
 
-        // 멘토가 로그인하면 멘토 질문 관리가 상단 로그인 옆에 보여짐
-        const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
-        if (mentorBtn) {
-          mentorBtn.classList.remove('hidden');
-          mentorBtn.classList.add('flex');
-        }
-
         // 멘토 로그인 시 '나의 멘토링 내역' 버튼은 숨김
         const mypageBtn = document.getElementById('nav-btn-mypage');
         if (mypageBtn) {
@@ -1952,7 +1920,7 @@
         }
 
         closeLoginModal();
-        showToast(`${mentorMajor} ${mentorId} ${mentorName} 멘토님, 환영합니다! '멘토 질문 관리'가 상단에 표시됩니다.`);
+        showToast(`${mentorMajor} ${mentorId} ${mentorName} 멘토님, 환영합니다!`);
       }
     }
 
@@ -1962,12 +1930,6 @@
       document.getElementById('btn-login-open').classList.remove('hidden');
       document.getElementById('logged-in-profile').classList.add('hidden');
       document.getElementById('logged-in-profile').classList.remove('flex');
-
-      const mentorBtn = document.getElementById('nav-btn-mentor-dashboard');
-      if (mentorBtn) {
-        mentorBtn.classList.add('hidden');
-        mentorBtn.classList.remove('flex');
-      }
 
       const mypageBtn = document.getElementById('nav-btn-mypage');
       if (mypageBtn) {

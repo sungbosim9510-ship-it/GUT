@@ -78,9 +78,6 @@
           </div>
         </div>
 
-        <a href="mentor-dashboard.html" class="text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-list-check text-slate-500"></i> 질문 목록 대시보드
-        </a>
         <a href="index.html" class="text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1.5">
           <i class="fa-solid fa-house text-slate-400"></i> 메인 홈
         </a>
@@ -701,7 +698,7 @@
       localStorage.setItem('yonam_just_submitted', 'true');
 
       // 리다이렉트
-      window.location.href = 'mentor-dashboard.html?submitted=true';
+      window.location.href = 'index.html?submitted=true';
     }
 
     // Update UI elements after submission
@@ -795,7 +792,7 @@
       }
 
       localStorage.setItem('yonam_just_rejected', 'true');
-      window.location.href = 'mentor-dashboard.html?rejected=true';
+      window.location.href = 'index.html?rejected=true';
     }
 
   </script>
