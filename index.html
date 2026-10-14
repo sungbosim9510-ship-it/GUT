@@ -6,6 +6,8 @@
   <title>연암공과대학교 커리어 멘토링 - 동문 현직자 멘토 찾기</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     
@@ -60,8 +62,18 @@
         </div>
       </div>
 
-      <!-- Right Header Actions (로그인) -->
-      <div class="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
+      <!-- Right Header Actions (게시판 바로가기 및 로그인) -->
+      <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+        <!-- 멘토링 질문 & 답변 게시판 바로가기 버튼 -->
+        <a 
+          href="requests.html" 
+          class="text-xs sm:text-sm font-bold px-3 sm:px-3.5 py-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 transition flex items-center gap-1.5 border border-slate-200/80 shadow-2xs"
+        >
+          <i class="fa-solid fa-comments text-lg-red"></i>
+          <span class="hidden xs:inline sm:inline">질문·답변 게시판</span>
+          <span class="inline xs:hidden sm:hidden">게시판</span>
+        </a>
+
         <!-- Auth State Section -->
         <div class="flex items-center space-x-3 shrink-0" id="auth-header-container">
           <button 
@@ -262,11 +274,17 @@
 
           </div>
 
-          <!-- Bottom Action -->
-          <div class="mt-8 pt-6 border-t border-slate-200 flex justify-end">
-            <button onclick="openApplyModal()" class="px-8 py-3.5 bg-[#C30034] hover:bg-[#A3002B] text-white font-bold rounded-xl shadow-lg transition">
-              1:1 멘토링 신청하기
-            </button>
+          <!-- Bottom Action Button: Go to separate requests page to view requests & write -->
+          <div class="mt-8 pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-sm text-slate-500">
+              <i class="fa-solid fa-comments text-[#C30034]"></i>
+              <span>선배에게 등록된 질문 목록을 확인하고 1:1 멘토링 질문을 작성할 수 있습니다.</span>
+            </div>
+            <div>
+              <button onclick="goToMentorRequestsPage()" class="px-8 py-3.5 bg-[#C30034] hover:bg-[#A3002B] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition flex items-center gap-2 text-sm sm:text-base active:scale-98">
+                <i class="fa-solid fa-paper-plane"></i> 멘토링 요청
+              </button>
+            </div>
           </div>
         </div>
 
@@ -373,20 +391,20 @@
   </div>
 
 
-  <!-- MODAL 2: 학과 / 학번 / 멘토 로그인 모달 -->
+  <!-- MODAL 2: 학과 / 학번 / 멘토 로그인 모달 (Supabase Auth 연동) -->
   <div id="login-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[92vh] overflow-y-auto">
       <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
         <i class="fa-solid fa-xmark text-xl"></i>
       </button>
 
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-12 h-12 bg-red-50 text-lg-red rounded-full flex items-center justify-center text-xl shrink-0">
+        <div class="w-12 h-12 bg-red-50 text-[#C30034] rounded-full flex items-center justify-center text-xl shrink-0">
           <i class="fa-solid fa-id-card"></i>
         </div>
         <div>
-          <h3 class="text-lg font-bold text-slate-900">연암공과대학교 동문 로그인</h3>
-          <p class="text-xs text-yonam-gray">멘티(학생) 또는 멘토(선배) 구분을 선택하여 로그인하세요.</p>
+          <h3 class="text-lg font-bold text-slate-900">연암공과대학교 커리어 로그인</h3>
+          <p class="text-xs text-slate-500">학생(멘티) 또는 동문 멘토 구분을 선택하여 로그인하세요.</p>
         </div>
       </div>
 
@@ -396,9 +414,9 @@
           type="button" 
           onclick="switchLoginRole('mentee')" 
           id="tab-role-mentee" 
-          class="flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-lg-red border-b-2 border-lg-red transition cursor-pointer"
+          class="flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-[#C30034] border-b-2 border-[#C30034] transition cursor-pointer"
         >
-          <i class="fa-solid fa-user-graduate mr-1"></i> 멘티(학생) 로그인
+          <i class="fa-solid fa-user-graduate mr-1"></i> 학생(멘티) 로그인
         </button>
         <button 
           type="button" 
@@ -411,12 +429,11 @@
       </div>
 
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
-        <!-- Mentee Fields (Active by default) -->
-        <div id="login-mentee-fields" class="space-y-4">
+        <!-- Mentee Fields (기존 상태 유지 / 테스트 버튼 삭제) -->
+        <div id="login-mentee-fields" class="space-y-3.5">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">소속 학과</label>
-            <select id="login-major" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] bg-white font-medium text-slate-800">
-              <option value="">학과를 선택해주세요</option>
+            <select id="login-major" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] bg-white">
               <option value="기계공학과">기계공학과</option>
               <option value="스마트기계공학과">스마트기계공학과</option>
               <option value="전기전자공학과">전기전자공학과</option>
@@ -425,75 +442,143 @@
               <option value="소프트웨어(심화)">소프트웨어(심화)</option>
             </select>
           </div>
-
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">학번 (8자리 숫자)</label>
-            <input 
-              type="text" 
-              id="login-student-id" 
-              maxlength="8"
-              pattern="[0-9]{8}"
-              title="8자리 숫자로 입력해주세요 (예: 20241234)"
-              placeholder="예: 20241234" 
-              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
-            >
+            <input type="text" id="login-student-id" required placeholder="예: 20241234" maxlength="8" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]">
           </div>
-
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
-            <input 
-              type="text" 
-              id="login-name" 
-              placeholder="성함을 입력하세요 (예: 홍길동)" 
-              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
-            >
+            <input type="text" id="login-name" required placeholder="예: 홍길동" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]">
           </div>
         </div>
 
-        <!-- Mentor Fields -->
-        <div id="login-mentor-fields" class="hidden space-y-4">
+        <!-- Mentor Fields (4명 멘토 중 선택하여 로그인) -->
+        <div id="login-mentor-fields" class="hidden space-y-3.5">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">소속 학과</label>
-            <select id="login-mentor-major" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] bg-white font-medium text-slate-800">
-              <option value="">학과를 선택해주세요</option>
-              <option value="기계공학과">기계공학과</option>
-              <option value="스마트기계공학과">스마트기계공학과</option>
-              <option value="전기전자공학과">전기전자공학과</option>
-              <option value="스마트전기전자공학과">스마트전기전자공학과</option>
-              <option value="소프트웨어학과">소프트웨어학과</option>
-              <option value="소프트웨어(심화)">소프트웨어(심화)</option>
-            </select>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold text-slate-700">동문 멘토 선택</label>
+              <span class="text-[11px] text-slate-400">4명의 멘토 중 선택</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2" id="mentor-select-cards">
+              <!-- 멘토 1: 강동현 -->
+              <div 
+                onclick="selectMentorForLogin(1)" 
+                id="mentor-card-1"
+                class="mentor-login-card border-2 border-[#C30034] bg-red-50/50 p-2.5 rounded-xl cursor-pointer transition relative"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0">
+                    <img src="https://search.pstatic.net/common/?src=http%3A%2F%2Fimgnews.naver.net%2Fimage%2F5095%2F2026%2F06%2F17%2F0001042880_001_20260617102611766.png&type=sc960_832" class="w-full h-full object-contain" alt="SK하이닉스">
+                  </div>
+                  <div class="min-w-0 pr-3">
+                    <div class="font-bold text-xs text-slate-900 truncate">강동현 멘토</div>
+                    <div class="text-[10px] text-slate-500 truncate">SK하이닉스</div>
+                  </div>
+                </div>
+                <i id="mentor-check-1" class="fa-solid fa-circle-check text-xs text-[#C30034] absolute top-2 right-2"></i>
+              </div>
+
+              <!-- 멘토 2: 박성용 -->
+              <div 
+                onclick="selectMentorForLogin(2)" 
+                id="mentor-card-2"
+                class="mentor-login-card border-2 border-slate-200 bg-white hover:border-slate-300 p-2.5 rounded-xl cursor-pointer transition relative"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0">
+                    <img src="https://search.pstatic.net/common/?src=http%3A%2F%2Fimgnews.naver.net%2Fimage%2F417%2F2021%2F03%2F30%2F0000675485_001_20210330113000460.png&type=sc960_832" class="w-full h-full object-contain" alt="현대위아">
+                  </div>
+                  <div class="min-w-0 pr-3">
+                    <div class="font-bold text-xs text-slate-900 truncate">박성용 멘토</div>
+                    <div class="text-[10px] text-slate-500 truncate">현대위아</div>
+                  </div>
+                </div>
+                <i id="mentor-check-2" class="fa-solid fa-circle-check text-xs text-[#C30034] absolute top-2 right-2 hidden"></i>
+              </div>
+
+              <!-- 멘토 3: 황문재 -->
+              <div 
+                onclick="selectMentorForLogin(3)" 
+                id="mentor-card-3"
+                class="mentor-login-card border-2 border-slate-200 bg-white hover:border-slate-300 p-2.5 rounded-xl cursor-pointer transition relative"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0">
+                    <img src="https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA2MTdfMTgz%2FMDAxNzgxNjY5MzU3NTkx.2dcOiJGao15o3EMC7qMkepGLvlmQI2ZiXFiEGRu_qDUg.ivMoi7f6T8JLZseNy-9T-5FgWOU1c7rimawLadzEhn4g.PNG%2F6fe307c3-0ff7-48f6-bd47-b15c830316a9.png&type=sc960_832" class="w-full h-full object-contain" alt="한화에어로스페이스">
+                  </div>
+                  <div class="min-w-0 pr-3">
+                    <div class="font-bold text-xs text-slate-900 truncate">황문재 멘토</div>
+                    <div class="text-[10px] text-slate-500 truncate">한화에어로</div>
+                  </div>
+                </div>
+                <i id="mentor-check-3" class="fa-solid fa-circle-check text-xs text-[#C30034] absolute top-2 right-2 hidden"></i>
+              </div>
+
+              <!-- 멘토 4: 김종민 -->
+              <div 
+                onclick="selectMentorForLogin(4)" 
+                id="mentor-card-4"
+                class="mentor-login-card border-2 border-slate-200 bg-white hover:border-slate-300 p-2.5 rounded-xl cursor-pointer transition relative"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0">
+                    <img src="https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNTEwMjNfNjcg%2FMDAxNzYxMjA3MjMxNzgz.nx94CNBTS3R8WZuvcHNO4tigu4F-VdA6vwVAgrLV8xUg.9SKqvfiJZwPjAR6N7gvaPb5z15H9C1mntffRzVKGKIUg.PNG%2F%25BA%25CE%25BB%25EA%25B5%25B5%25BD%25C3%25B0%25A1%25BD%25BA_%25C3%25A4%25BF%25EB%25BD%25E6%25B3%25D7%25C0%25CF.png&type=sc960_832" class="w-full h-full object-contain" alt="부산도시가스">
+                  </div>
+                  <div class="min-w-0 pr-3">
+                    <div class="font-bold text-xs text-slate-900 truncate">김종민 멘토</div>
+                    <div class="text-[10px] text-slate-500 truncate">부산도시가스</div>
+                  </div>
+                </div>
+                <i id="mentor-check-4" class="fa-solid fa-circle-check text-xs text-[#C30034] absolute top-2 right-2 hidden"></i>
+              </div>
+            </div>
+            <input type="hidden" id="login-selected-mentor-id" value="1">
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">학번 (8자리 숫자)</label>
-            <input 
-              type="text" 
-              id="login-mentor-id" 
-              maxlength="8"
-              pattern="[0-9]{8}"
-              title="8자리 숫자로 입력해주세요 (예: 12345678)"
-              placeholder="예: 12345678" 
-              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
-            >
+          <!-- 선택된 멘토 안내 박스 -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-[#C30034]/10 text-[#C30034] flex items-center justify-center shrink-0 font-bold">
+              <i class="fa-solid fa-user-check text-xs"></i>
+            </div>
+            <div class="min-w-0 leading-relaxed">
+              선택: <strong id="selected-mentor-name-display" class="text-slate-900 font-bold">강동현 멘토 (SK하이닉스)</strong>
+            </div>
           </div>
 
+          <!-- 멘토 비밀번호 입력 필드 -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
-            <input 
-              type="text" 
-              id="login-mentor-name" 
-              placeholder="성함을 입력하세요 (예: 홍길동)" 
-              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
-            >
+            <label class="block text-xs font-bold text-slate-700 mb-1">멘토 비밀번호 <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="login-mentor-password" 
+                placeholder="비밀번호를 입력하세요" 
+                autocomplete="current-password"
+                class="w-full pl-3 pr-10 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#C30034]"
+              >
+              <button 
+                type="button" 
+                onclick="toggleMentorPasswordVisibility()" 
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <i id="mentor-pwd-eye-icon" class="fa-solid fa-eye text-sm"></i>
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1.5 px-0.5">
+              <span><i class="fa-solid fa-key text-amber-500 mr-1"></i>초기 비밀번호: <strong class="text-slate-700 font-semibold">yonam1234!</strong></span>
+              <span class="text-slate-400 text-[10px]">멘토 전용 인증</span>
+            </div>
           </div>
         </div>
 
-        <div class="pt-2">
-          <button type="submit" class="w-full py-3 bg-[#C30034] hover:bg-[#A3002B] text-white text-sm font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-            <i class="fa-solid fa-right-to-bracket"></i> 로그인하기
-          </button>
-        </div>
+        <button 
+          type="submit" 
+          id="btn-login-submit"
+          class="w-full py-2.5 bg-[#C30034] hover:bg-[#A3002B] text-white text-sm font-bold rounded-xl shadow-md transition mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          <span id="btn-login-text"><i class="fa-solid fa-right-to-bracket mr-1"></i> 로그인하기</span>
+        </button>
       </form>
     </div>
   </div>
@@ -527,8 +612,8 @@
       "부산도시가스": "https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNTEwMjNfNjcg%2FMDAxNzYxMjA3MjMxNzgz.nx94CNBTS3R8WZuvcHNO4tigu4F-VdA6vwVAgrLV8xUg.9SKqvfiJZwPjAR6N7gvaPb5z15H9C1mntffRzVKGKIUg.PNG%2F%25BA%25CE%25BB%25EA%25B5%25B5%25BD%25C3%25B0%25A1%25BD%25BA_%25C3%25A4%25BF%25EB%25BD%25E6%25B3%25D7%25C0%25CF.png&type=sc960_832"
     };
 
-    // 4 Mentors from PDF with 20s Mid-age Young Professional Avatars matching company & job
-    const MENTORS = [
+    // 4 Mentors from PDF (Default / Fallback)
+    let MENTORS = [
       {
         id: 1,
         name: "강동현",
@@ -590,16 +675,67 @@
     let selectedMentor = null;
     let currentUser = null; // { major, studentId, name }
 
-    // My Mentoring Applications State Data
-    let myMentoringList = [];
+    // 기본 멘토링 요청 데이터 (비어있는 초기 상태)
+    const DEFAULT_MOCK_REQUESTS = [];
 
-    function loadMyMentoringList() {
-      const saved = localStorage.getItem('yonam_mentoring_requests');
-      if (saved) {
-        try {
-          myMentoringList = JSON.parse(saved);
-        } catch(e) {
-          myMentoringList = [];
+    // My Mentoring Applications State Data (유효 캐시 우선 로드)
+    let myMentoringList = [];
+    try {
+      const cached = localStorage.getItem('yonam_mentoring_requests');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          myMentoringList = parsed.filter(item => !['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id)));
+        }
+      }
+    } catch(e) {
+      myMentoringList = [];
+    }
+
+    async function loadMyMentoringList() {
+      try {
+        if (typeof dbGetRequests === 'function') {
+          const liveRequests = await dbGetRequests('ALL', 'ALL', '');
+          if (Array.isArray(liveRequests)) {
+            const validLive = liveRequests.filter(item => !['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id)));
+            const map = new Map();
+            validLive.forEach(item => map.set(String(item.id), item));
+
+            try {
+              const cached = localStorage.getItem('yonam_mentoring_requests');
+              if (cached) {
+                const localItems = JSON.parse(cached);
+                if (Array.isArray(localItems)) {
+                  localItems.forEach(item => {
+                    const isDummy = ['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id));
+                    if (!isDummy && !map.has(String(item.id))) {
+                      map.set(String(item.id), item);
+                    }
+                  });
+                }
+              }
+            } catch(e) {}
+
+            myMentoringList = Array.from(map.values());
+            localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase 요청 로드 실패 (로컬 캐시 보존):', err);
+      }
+
+      if (myMentoringList.length === 0) {
+        const saved = localStorage.getItem('yonam_mentoring_requests');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+              myMentoringList = parsed.filter(item => !['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id)));
+            }
+          } catch (e) {
+            myMentoringList = [];
+          }
         }
       }
     }
@@ -608,12 +744,34 @@
       loadMyMentoringList();
     }
 
-    // DOM Ready Initialization
-    document.addEventListener('DOMContentLoaded', () => {
+    // DOM Ready Initialization with Supabase Sync
+    document.addEventListener('DOMContentLoaded', async () => {
       checkLocalStorageStatus();
       checkLoginStatus();
       renderFilterChips();
       renderMentorCards();
+
+      // Supabase 데이터베이스에서 최신 멘토 목록 동기화
+      try {
+        const liveMentors = await dbGetMentors();
+        if (liveMentors && liveMentors.length > 0) {
+          MENTORS = liveMentors;
+          renderMentorCards();
+        }
+      } catch (err) {
+        console.warn('Supabase 멘토 데이터 로드 중 오류 (기본 데이터 사용):', err);
+      }
+
+      // 실시간 데이터베이스 변경 구독
+      if (typeof dbSubscribeMentoring === 'function') {
+        dbSubscribeMentoring(async () => {
+          const updatedMentors = await dbGetMentors();
+          if (updatedMentors && updatedMentors.length > 0) {
+            MENTORS = updatedMentors;
+            renderMentorCards();
+          }
+        });
+      }
     });
 
     // Navigation Switchers
@@ -802,6 +960,16 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // Go to dedicated mentor requests list page
+    function goToMentorRequestsPage() {
+      const mentorId = selectedMentor ? selectedMentor.id : '';
+      if (mentorId) {
+        window.location.href = `requests.html?mentorId=${mentorId}`;
+      } else {
+        window.location.href = 'requests.html';
+      }
+    }
+
 
     function openApplyModal() {
       if (!currentUser) {
@@ -867,7 +1035,7 @@
       }
     }
 
-    function submitApplyForm(e) {
+    async function submitApplyForm(e) {
       e.preventDefault();
       const effortEl = document.getElementById('apply-input-effort');
       const q1El = document.getElementById('apply-input-q1');
@@ -877,10 +1045,21 @@
       if (len < 50) {
         validateEffortInput();
         if (effortEl) effortEl.focus();
+        alert(`나의 현재 고민과 시도해 본 노력은 최소 50자 이상 작성해 주셔야 합니다.\n(현재 ${len}자 작성됨 / ${50 - len}자 부족)`);
         return;
       }
 
-      const todayStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const q1Val = q1El ? q1El.value.trim() : '';
+      if (!q1Val) {
+        alert('선배님께 꼭 얻고 싶은 핵심 질문 1(필수)을 입력해주세요.');
+        if (q1El) q1El.focus();
+        return;
+      }
+
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+
+      const safeStudentId = String(currentUser && currentUser.studentId ? currentUser.studentId : '20241234').replace(/[^0-9]/g, '').slice(0, 8) || '20241234';
       const newReq = {
         id: 'req-' + Date.now(),
         mentorId: selectedMentor ? selectedMentor.id : 1,
@@ -889,23 +1068,39 @@
         mentorRole: selectedMentor ? selectedMentor.role : '동문 멘토',
         mentorAvatar: selectedMentor ? selectedMentor.avatar : 'logo.png',
         studentName: currentUser ? currentUser.name : '김철수',
-        department: currentUser ? currentUser.major : '기계공학과',
-        studentId: currentUser ? currentUser.studentId : '20241234',
+        department: currentUser ? (currentUser.major || currentUser.department) : '기계공학과',
+        studentId: safeStudentId,
         grade: '2학년',
         status: 'pending',
         appliedAt: `${todayStr} 접수`,
         effort: effortEl.value.trim(),
-        q1: q1El ? q1El.value.trim() : '',
+        q1: q1Val,
         q2: q2El ? q2El.value.trim() : '',
         answer: null
       };
+
+      // 1) 로컬 스토리지 선반영
       myMentoringList.unshift(newReq);
       localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
       if (selectedMentor) {
         localStorage.setItem('yonam_selected_mentor', JSON.stringify(selectedMentor));
       }
+
+      // 2) Supabase 데이터베이스 저장
+      try {
+        if (typeof dbCreateRequest === 'function') {
+          await dbCreateRequest(newReq);
+          console.log('[Supabase] 메인 신청 등록 완료');
+        }
+      } catch (err) {
+        console.warn('Supabase 요청 등록 중 경고 (로컬 캐시 보존):', err);
+      }
+
+      // 3) 최신 목록 재동기화
+      await loadMyMentoringList();
+
       closeApplyModal();
-      showToast('멘토링 신청이 성공적으로 전달되었습니다! 멘토 확인 후 안내됩니다.');
+      showToast('멘토링 신청이 성공적으로 등록되었습니다!');
 
       if (effortEl) effortEl.value = '';
       if (q1El) q1El.value = '';
@@ -913,19 +1108,51 @@
       validateEffortInput();
     }
 
-    function fillMenteeLogin(major, studentId, name) {
-      document.getElementById('login-major').value = major;
-      document.getElementById('login-student-id').value = studentId;
-      document.getElementById('login-name').value = name;
-    }
-
-    function fillMentorLogin(major, studentId, name) {
-      document.getElementById('login-mentor-major').value = major;
-      document.getElementById('login-mentor-id').value = studentId;
-      document.getElementById('login-mentor-name').value = name;
-    }
-
     let currentLoginRole = 'mentee';
+    let selectedMentorId = 1;
+
+    function selectMentorForLogin(id) {
+      selectedMentorId = Number(id);
+      const hiddenInput = document.getElementById('login-selected-mentor-id');
+      if (hiddenInput) hiddenInput.value = id;
+
+      const nameDisplay = document.getElementById('selected-mentor-name-display');
+      const mentor = (typeof MENTORS !== 'undefined') 
+        ? MENTORS.find(m => m.id === Number(id))
+        : (typeof MENTOR_AUTH_LIST !== 'undefined' ? MENTOR_AUTH_LIST.find(m => m.id === Number(id)) : null);
+
+      if (nameDisplay && mentor) {
+        nameDisplay.textContent = `${mentor.name} 멘토 (${mentor.company})`;
+      }
+
+      for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`mentor-card-${i}`);
+        const check = document.getElementById(`mentor-check-${i}`);
+        if (card && check) {
+          if (i === Number(id)) {
+            card.className = 'mentor-login-card border-2 border-[#C30034] bg-red-50/50 p-2.5 rounded-xl cursor-pointer transition relative';
+            check.classList.remove('hidden');
+          } else {
+            card.className = 'mentor-login-card border-2 border-slate-200 bg-white hover:border-slate-300 p-2.5 rounded-xl cursor-pointer transition relative';
+            check.classList.add('hidden');
+          }
+        }
+      }
+    }
+
+    function toggleMentorPasswordVisibility() {
+      const pwdInput = document.getElementById('login-mentor-password');
+      const eyeIcon = document.getElementById('mentor-pwd-eye-icon');
+      if (!pwdInput || !eyeIcon) return;
+
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.className = 'fa-solid fa-eye-slash text-sm text-[#C30034]';
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.className = 'fa-solid fa-eye text-sm text-slate-400';
+      }
+    }
 
     function switchLoginRole(role) {
       currentLoginRole = role;
@@ -933,19 +1160,22 @@
       const mentorTab = document.getElementById('tab-role-mentor');
       const menteeFields = document.getElementById('login-mentee-fields');
       const mentorFields = document.getElementById('login-mentor-fields');
+      const submitBtnText = document.getElementById('btn-login-text');
 
       if (!menteeTab || !mentorTab || !menteeFields || !mentorFields) return;
 
       if (role === 'mentee') {
-        menteeTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-lg-red border-b-2 border-lg-red transition cursor-pointer';
+        menteeTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-[#C30034] border-b-2 border-[#C30034] transition cursor-pointer';
         mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer';
         menteeFields.classList.remove('hidden');
         mentorFields.classList.add('hidden');
+        if (submitBtnText) submitBtnText.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-1"></i> 학생으로 로그인';
       } else {
-        mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-lg-red border-b-2 border-lg-red transition cursor-pointer';
+        mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-[#C30034] border-b-2 border-[#C30034] transition cursor-pointer';
         menteeTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer';
         mentorFields.classList.remove('hidden');
         menteeFields.classList.add('hidden');
+        if (submitBtnText) submitBtnText.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 멘토 비밀번호 로그인';
       }
     }
 
@@ -972,11 +1202,11 @@
         if (currentUser.role === 'mentee') {
           document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-graduate"></i>';
           document.getElementById('user-display-name').textContent = `${currentUser.name} 님`;
-          document.getElementById('user-display-info').textContent = `${currentUser.major} ${currentUser.studentId}`;
+          document.getElementById('user-display-info').textContent = `${currentUser.major || currentUser.department || ''} ${currentUser.studentId || ''}`;
         } else if (currentUser.role === 'mentor') {
           document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-tie"></i>';
           document.getElementById('user-display-name').textContent = `${currentUser.name} 멘토님`;
-          document.getElementById('user-display-info').textContent = `${currentUser.major} ${currentUser.studentId} | ${currentUser.company || ''}`;
+          document.getElementById('user-display-info').textContent = `${currentUser.company || ''} | ${currentUser.email || ''}`;
         }
       } catch (e) {
         console.error("Login status parse error:", e);
@@ -984,7 +1214,7 @@
     }
 
     // Handle Login Form Submission (Mentee vs Mentor)
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
 
       if (currentLoginRole === 'mentee') {
@@ -1002,8 +1232,9 @@
           return;
         }
 
-        currentUser = { role: 'mentee', major, studentId, name };
+        currentUser = { role: 'mentee', major, studentId, name, grade: '2학년' };
         localStorage.setItem('yonam_user', JSON.stringify(currentUser));
+        if (typeof dbUpsertUser === 'function') dbUpsertUser(currentUser);
 
         document.getElementById('btn-login-open').classList.add('hidden');
         document.getElementById('logged-in-profile').classList.remove('hidden');
@@ -1015,52 +1246,97 @@
 
         closeLoginModal();
         showToast(`${major} ${studentId} ${name} 님, 환영합니다!`);
+        await loadMyMentoringList();
       } else {
-        // Mentor Login logic
-        const mentorMajor = document.getElementById('login-mentor-major').value;
-        const mentorId = document.getElementById('login-mentor-id').value.trim();
-        const mentorName = document.getElementById('login-mentor-name').value.trim();
+        // 멘토 로그인: 4명의 멘토 중 선택 & 비밀번호 입력 검증 (Supabase Auth 서버 연동 제외)
+        const mentorId = selectedMentorId || Number(document.getElementById('login-selected-mentor-id').value) || 1;
+        const passwordInput = document.getElementById('login-mentor-password');
+        const password = passwordInput ? passwordInput.value : '';
 
-        if (!mentorMajor || !mentorId || !mentorName) {
-          alert('멘토 학과, 학번, 이름을 모두 입력해주세요.');
+        if (!password || password.trim().length === 0) {
+          alert('멘토 비밀번호를 입력해 주세요. (초기 비밀번호: yonam1234!)');
+          if (passwordInput) passwordInput.focus();
           return;
         }
 
-        if (mentorId.length !== 8 || isNaN(mentorId)) {
-          alert('학번은 8자리 숫자로 입력해 주세요. (예: 12345678)');
-          return;
+        const submitBtn = document.getElementById('btn-login-submit');
+        const submitBtnText = document.getElementById('btn-login-text');
+        const originalText = submitBtnText ? submitBtnText.innerHTML : '';
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          let mentorUser = null;
+          if (typeof dbMentorLogin === 'function') {
+            const loginResult = await dbMentorLogin(mentorId, password);
+            mentorUser = loginResult ? loginResult.user : null;
+          } else {
+            if (password.trim() !== 'yonam1234!' && password.trim() !== '1234') {
+              throw new Error('비밀번호가 일치하지 않습니다. (초기 비밀번호: yonam1234!)');
+            }
+          }
+
+          if (!mentorUser) {
+            const mentor = (typeof MENTORS !== 'undefined')
+              ? MENTORS.find(m => m.id === Number(mentorId))
+              : (typeof MENTOR_AUTH_LIST !== 'undefined' ? MENTOR_AUTH_LIST.find(m => m.id === Number(mentorId)) : null);
+
+            mentorUser = {
+              role: 'mentor',
+              id: mentor ? mentor.id : mentorId,
+              mentorId: mentor ? mentor.id : mentorId,
+              name: mentor ? mentor.name : '동문 멘토',
+              company: mentor ? mentor.company : '연암공과대학교',
+              roleTitle: mentor ? mentor.role : '동문 멘토',
+              major: mentor ? (mentor.department || '기계공학과') : '기계공학과',
+              department: mentor ? (mentor.department || '기계공학과') : '기계공학과',
+              studentId: mentor ? (mentor.studentId || '12345678') : '12345678',
+              email: mentor ? (mentor.email || '') : '',
+              avatar: mentor ? (mentor.avatar || 'logo.png') : 'logo.png'
+            };
+          }
+
+          currentUser = mentorUser;
+          localStorage.setItem('yonam_user', JSON.stringify(currentUser));
+
+          document.getElementById('btn-login-open').classList.add('hidden');
+          document.getElementById('logged-in-profile').classList.remove('hidden');
+          document.getElementById('logged-in-profile').classList.add('flex');
+
+          document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-tie"></i>';
+          document.getElementById('user-display-name').textContent = `${currentUser.name} 멘토님`;
+          document.getElementById('user-display-info').textContent = `${currentUser.company || ''}`;
+
+          if (passwordInput) passwordInput.value = '';
+          closeLoginModal();
+          showToast(`${currentUser.name} 멘토님 환영합니다!`);
+          await loadMyMentoringList();
+        } catch (err) {
+          console.error('멘토 로그인 실패:', err);
+          alert(err.message || '멘토 로그인에 실패했습니다. 비밀번호를 확인해주세요.');
+          if (passwordInput) passwordInput.focus();
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+          if (submitBtnText) submitBtnText.innerHTML = originalText;
         }
-
-        const foundMentor = MENTORS.find(m => m.name === mentorName);
-        const company = foundMentor ? foundMentor.company : '연암공과대학교';
-
-        currentUser = { role: 'mentor', major: mentorMajor, studentId: mentorId, name: mentorName, company };
-        localStorage.setItem('yonam_user', JSON.stringify(currentUser));
-
-        document.getElementById('btn-login-open').classList.add('hidden');
-        document.getElementById('logged-in-profile').classList.remove('hidden');
-        document.getElementById('logged-in-profile').classList.add('flex');
-
-        document.getElementById('user-profile-icon').innerHTML = '<i class="fa-solid fa-user-tie"></i>';
-        document.getElementById('user-display-name').textContent = `${mentorName} 멘토님`;
-        document.getElementById('user-display-info').textContent = `${mentorMajor} ${mentorId} | ${company}`;
-
-        closeLoginModal();
-        showToast(`${mentorMajor} ${mentorId} ${mentorName} 멘토님, 환영합니다!`);
       }
     }
 
-    function handleLogout() {
-      currentUser = null;
-      localStorage.removeItem('yonam_user');
-      document.getElementById('btn-login-open').classList.remove('hidden');
-      document.getElementById('logged-in-profile').classList.add('hidden');
-      document.getElementById('logged-in-profile').classList.remove('flex');
+    async function handleLogout() {
+      if (confirm('로그아웃 하시겠습니까?')) {
+        if (typeof dbLogout === 'function') {
+          try { await dbLogout(); } catch (e) {}
+        }
+        currentUser = null;
+        localStorage.removeItem('yonam_user');
+        document.getElementById('btn-login-open').classList.remove('hidden');
+        document.getElementById('logged-in-profile').classList.add('hidden');
+        document.getElementById('logged-in-profile').classList.remove('flex');
 
-      showToast('로그아웃 되었습니다.');
+        showToast('로그아웃 되었습니다.');
 
-      // 로그아웃 시 메인 멘토 목록 화면으로 전환
-      showListView();
+        // 로그아웃 시 메인 멘토 목록 화면으로 전환
+        showListView();
+      }
     }
 
     function showToast(msg) {
