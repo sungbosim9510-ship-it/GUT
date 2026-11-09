@@ -120,7 +120,7 @@ INSERT INTO mentors (id, name, company, role_department, category, avatar_url, t
 VALUES 
 (
     1,
-    '강동현',
+    '양동훈',
     'SK하이닉스',
     'Maintenance (설비보전)',
     'maintenance',

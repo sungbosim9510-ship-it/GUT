@@ -477,6 +477,10 @@
         try {
           const user = JSON.parse(savedUser);
           if (user && user.name) {
+            if (user.role === 'mentor' && (user.id === 1 || user.mentorId === 1 || user.name === '강동현')) {
+              user.name = '양동훈';
+              localStorage.setItem('yonam_user', JSON.stringify(user));
+            }
             const nameEl = document.getElementById('answer-mentor-name');
             if (nameEl) nameEl.textContent = `${user.name} 멘토님`;
             const infoEl = document.getElementById('answer-mentor-info');
@@ -542,6 +546,9 @@
         }
 
         // Header mentor profile match
+        if (target.mentorId == 1 || target.mentorName === '강동현') {
+          target.mentorName = '양동훈';
+        }
         if (target.mentorName) {
           const nameEl = document.getElementById('answer-mentor-name');
           if (nameEl) nameEl.textContent = `${target.mentorName} 멘토님`;

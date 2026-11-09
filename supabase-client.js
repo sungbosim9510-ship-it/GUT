@@ -30,7 +30,18 @@ getSupabase();
 
 /**
  * CDN 라이브러리 미동작 환경을 대비한 브라우저 표준 fetch 기반 직접 통신 헬퍼
+ * (타임아웃 및 재시도 지원)
  */
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function directSupabaseFetch(path, options = {}) {
   const url = `${SUPABASE_CONFIG.url}/rest/v1/${path}`;
   const headers = {
@@ -41,22 +52,82 @@ async function directSupabaseFetch(path, options = {}) {
     ...(options.headers || {})
   };
 
-  const response = await fetch(url, {
+  const fetchOpts = {
     method: options.method || 'GET',
     headers: headers,
     body: options.body ? JSON.stringify(options.body) : undefined
-  });
+  };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`[Supabase REST Error ${response.status}]: ${errorText}`);
+  let lastError = null;
+  const maxAttempts = options.retries !== undefined ? options.retries + 1 : 2;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetchWithTimeout(url, fetchOpts, options.timeoutMs || 6000);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const err = new Error(`[Supabase REST Error ${response.status}]: ${errorText}`);
+        err.status = response.status;
+        if (response.status === 521 || response.status === 503 || response.status === 502) {
+          err.isServerDown = true;
+        }
+        throw err;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      return null;
+    } catch (e) {
+      lastError = e;
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
   }
 
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return await response.json();
+  throw lastError;
+}
+
+/**
+ * 클라우드 DB 연결 상태 확인 헬퍼
+ * @returns {Promise<{ok: boolean, status: string, message: string}>}
+ */
+async function dbCheckHealth() {
+  try {
+    const url = `${SUPABASE_CONFIG.url}/rest/v1/mentors?select=id&limit=1`;
+    const response = await fetchWithTimeout(url, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_CONFIG.anonKey,
+        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`
+      }
+    }, 4500);
+
+    if (response.ok) {
+      return { ok: true, status: 'connected', message: 'Supabase 클라우드 DB 정상 연결됨' };
+    }
+    if (response.status === 521 || response.status === 503) {
+      return {
+        ok: false,
+        status: 'paused',
+        message: '현재 Supabase 클라우드 DB 프로젝트가 일시정지(Paused) 상태입니다. Supabase 대시보드에서 [Restore project]를 실행해 주세요.'
+      };
+    }
+    return {
+      ok: false,
+      status: 'error',
+      message: `Supabase 서버 응답 오류 (HTTP ${response.status})`
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      status: 'offline',
+      message: '클라우드 DB 서버에 연결할 수 없습니다. Supabase 프로젝트 활성 상태(Paused 여부)를 확인해 주세요.'
+    };
   }
-  return null;
 }
 
 /**
@@ -73,31 +144,42 @@ const DEFAULT_COMPANY_LOGOS = {
  * 1. 멘토 목록 조회
  */
 async function dbGetMentors() {
-  const client = getSupabase();
   let data = null;
 
+  // 빠른 응답과 타임아웃 보장을 위해 directSupabaseFetch 우선 시도
   try {
-    if (client) {
-      const res = await client.from('mentors').select('*').order('id', { ascending: true });
-      if (!res.error) data = res.data;
-    }
+    data = await directSupabaseFetch('mentors?select=*&order=id.asc', { timeoutMs: 4500, retries: 1 });
   } catch (e) {
-    console.warn('[Supabase] client.from(mentors) 실패, directFetch 시도:', e);
+    console.warn('[Supabase] directFetch mentors 실패:', e);
   }
 
-  // Fallback: direct fetch
   if (!data) {
+    const client = getSupabase();
     try {
-      data = await directSupabaseFetch('mentors?select=*&order=id.asc');
+      if (client) {
+        const res = await client.from('mentors').select('*').order('id', { ascending: true });
+        if (!res.error) data = res.data;
+      }
     } catch (e) {
-      console.warn('[Supabase] directFetch mentors 실패:', e);
+      console.warn('[Supabase] client.from(mentors) 실패:', e);
     }
   }
 
   if (data && data.length > 0) {
+    // 만약 클라우드 DB에 이전 이름('강동현')이 남아있다면 '양동훈'으로 백그라운드 자동 업데이트
+    const oldMentor = data.find(m => m.id === 1 && m.name === '강동현');
+    if (oldMentor) {
+      directSupabaseFetch('mentors?id=eq.1', {
+        method: 'PATCH',
+        body: { name: '양동훈' },
+        timeoutMs: 3500,
+        retries: 0
+      }).catch(() => {});
+    }
+
     return data.map(m => ({
       id: m.id,
-      name: m.name,
+      name: (m.id === 1 || m.name === '강동현') ? '양동훈' : m.name,
       company: m.company,
       role: m.role_department,
       category: m.category,
@@ -125,59 +207,59 @@ async function dbGetMentorById(mentorId) {
  * 3. 멘토링 요청(질문) 목록 조회 (답변 정보 조인 포함)
  */
 async function dbGetRequests(filterMentorId = 'ALL', filterStatus = 'ALL', searchQuery = '') {
-  const client = getSupabase();
   let data = null;
 
-  // 1) Supabase JS Client 방식 시도
+  // 1) Direct REST Fetch 방식 (타임아웃 및 재시도 보장)
   try {
-    if (client) {
-      let query = client
-        .from('mentoring_requests')
-        .select(`
-          id,
-          mentor_id,
-          student_id,
-          student_name,
-          department,
-          grade,
-          effort,
-          q1,
-          q2,
-          status,
-          applied_at,
-          created_at,
-          mentors ( id, name, company, role_department, avatar_url ),
-          mentoring_answers ( id, q1_answer, q2_answer, cheer_message, content, draft, reject_reason_type, reject_reason_text, completed_at, rejected_at, created_at )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (filterMentorId && filterMentorId !== 'ALL') {
-        query = query.eq('mentor_id', Number(filterMentorId));
-      }
-      if (filterStatus && filterStatus !== 'ALL') {
-        query = query.eq('status', filterStatus);
-      }
-
-      const res = await query;
-      if (!res.error) data = res.data;
+    let qs = 'mentoring_requests?select=id,mentor_id,student_id,student_name,department,grade,effort,q1,q2,status,applied_at,created_at,mentors(id,name,company,role_department,avatar_url),mentoring_answers(id,q1_answer,q2_answer,cheer_message,content,draft,reject_reason_type,reject_reason_text,completed_at,rejected_at,created_at)&order=created_at.desc';
+    if (filterMentorId && filterMentorId !== 'ALL') {
+      qs += `&mentor_id=eq.${encodeURIComponent(filterMentorId)}`;
     }
+    if (filterStatus && filterStatus !== 'ALL') {
+      qs += `&status=eq.${encodeURIComponent(filterStatus)}`;
+    }
+    data = await directSupabaseFetch(qs, { timeoutMs: 5500, retries: 1 });
   } catch (e) {
-    console.warn('[Supabase] client.from(mentoring_requests) 실패, directFetch 시도:', e);
+    console.warn('[Supabase] directFetch requests 실패, client 폴백 시도:', e);
   }
 
-  // 2) Direct REST Fetch 방식 Fallback
+  // 2) Supabase JS Client 방식 Fallback
   if (!data) {
+    const client = getSupabase();
     try {
-      let qs = 'mentoring_requests?select=id,mentor_id,student_id,student_name,department,grade,effort,q1,q2,status,applied_at,created_at,mentors(id,name,company,role_department,avatar_url),mentoring_answers(id,q1_answer,q2_answer,cheer_message,content,draft,reject_reason_type,reject_reason_text,completed_at,rejected_at,created_at)&order=created_at.desc';
-      if (filterMentorId && filterMentorId !== 'ALL') {
-        qs += `&mentor_id=eq.${encodeURIComponent(filterMentorId)}`;
+      if (client) {
+        let query = client
+          .from('mentoring_requests')
+          .select(`
+            id,
+            mentor_id,
+            student_id,
+            student_name,
+            department,
+            grade,
+            effort,
+            q1,
+            q2,
+            status,
+            applied_at,
+            created_at,
+            mentors ( id, name, company, role_department, avatar_url ),
+            mentoring_answers ( id, q1_answer, q2_answer, cheer_message, content, draft, reject_reason_type, reject_reason_text, completed_at, rejected_at, created_at )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (filterMentorId && filterMentorId !== 'ALL') {
+          query = query.eq('mentor_id', Number(filterMentorId));
+        }
+        if (filterStatus && filterStatus !== 'ALL') {
+          query = query.eq('status', filterStatus);
+        }
+
+        const res = await query;
+        if (!res.error) data = res.data;
       }
-      if (filterStatus && filterStatus !== 'ALL') {
-        qs += `&status=eq.${encodeURIComponent(filterStatus)}`;
-      }
-      data = await directSupabaseFetch(qs);
     } catch (e) {
-      console.warn('[Supabase] directFetch requests 실패:', e);
+      console.warn('[Supabase] client.from(mentoring_requests) 실패:', e);
     }
   }
 
@@ -240,10 +322,11 @@ async function dbGetRequests(filterMentorId = 'ALL', filterStatus = 'ALL', searc
         cleanRejectReason = REJECT_REASON_MAP[rejectType] || REJECT_REASON_MAP.schedule;
       }
 
+      const rawMentorName = mentorObj.name || '동문 멘토';
       return {
         id: r.id,
         mentorId: r.mentor_id,
-        mentorName: mentorObj.name || '동문 멘토',
+        mentorName: (r.mentor_id === 1 || rawMentorName === '강동현') ? '양동훈' : rawMentorName,
         mentorCompany: mentorObj.company || '연암공과대학교',
         mentorRole: mentorObj.role_department || '',
         mentorAvatar: mentorObj.avatar_url || DEFAULT_COMPANY_LOGOS[mentorObj.company] || 'logo.png',
@@ -283,7 +366,7 @@ async function dbGetRequests(filterMentorId = 'ALL', filterStatus = 'ALL', searc
     return items;
   }
 
-  return [];
+  return null;
 }
 
 /**
@@ -306,45 +389,55 @@ async function dbCreateRequest(newReq) {
     applied_at: new Date().toISOString()
   };
 
-  const client = getSupabase();
-  let success = false;
-
-  // 1) Client 시도
+  // 1) Direct REST Fetch 우선 시도 (빠른 타임아웃 및 명확한 에러 감지)
   try {
+    const res = await directSupabaseFetch('mentoring_requests', {
+      method: 'POST',
+      body: payload,
+      timeoutMs: 6000,
+      retries: 1
+    });
+    return Array.isArray(res) ? res[0] : payload;
+  } catch (e) {
+    console.warn('[Supabase] directFetch insert 실패, client 시도:', e);
+    const client = getSupabase();
     if (client) {
       const res = await client.from('mentoring_requests').insert([payload]).select();
-      if (!res.error) {
-        success = true;
+      if (!res.error && res.data) {
         return res.data[0];
       }
-      console.warn('[Supabase] client insert 실패:', res.error);
     }
-  } catch (e) {
-    console.warn('[Supabase] client.insert 예외 발생:', e);
+    throw e;
   }
+}
 
-  // 2) Direct REST Fetch 시도
-  if (!success) {
-    try {
-      const res = await directSupabaseFetch('mentoring_requests', {
-        method: 'POST',
-        body: payload
-      });
-      return Array.isArray(res) ? res[0] : payload;
-    } catch (e) {
-      console.error('[Supabase] directFetch insert 실패:', e);
-      throw e;
+/**
+ * 4-1. 로컬 스토리지에만 저장된 미동기화 질문을 클라우드 DB로 자동 업로드 동기화
+ */
+async function dbSyncPendingLocalRequests(localItems, liveItems) {
+  if (!Array.isArray(localItems) || localItems.length === 0) return false;
+  const liveIds = new Set((liveItems || []).map(i => String(i.id)));
+  let syncedAny = false;
+
+  for (const item of localItems) {
+    const strId = String(item.id);
+    if (['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(strId)) continue;
+    if (!liveIds.has(strId)) {
+      try {
+        await dbCreateRequest(item);
+        syncedAny = true;
+      } catch (e) {
+        console.warn('[Supabase] 미동기화 로컬 질문 자동 업로드 실패:', strId, e);
+      }
     }
   }
-
-  return payload;
+  return syncedAny;
 }
 
 /**
  * 5. 멘토 답변 임시 저장
  */
 async function dbSaveDraft(requestId, mentorId, draftData) {
-  const client = getSupabase();
   const nowIso = new Date().toISOString();
   const answerPayload = {
     request_id: requestId,
@@ -353,25 +446,18 @@ async function dbSaveDraft(requestId, mentorId, draftData) {
     updated_at: nowIso
   };
 
-  try {
-    if (client) {
-      await client.from('mentoring_answers').upsert(answerPayload, { onConflict: 'request_id' });
-      await client.from('mentoring_requests').update({ status: 'in_progress' }).eq('id', requestId);
-      return true;
-    }
-  } catch (e) {
-    console.warn('[Supabase] client draft save 실패, directFetch 시도:', e);
-  }
-
-  // Direct REST Fallback
   await directSupabaseFetch('mentoring_answers?on_conflict=request_id', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
-    body: answerPayload
+    body: answerPayload,
+    timeoutMs: 6000,
+    retries: 1
   });
   await directSupabaseFetch(`mentoring_requests?id=eq.${encodeURIComponent(requestId)}`, {
     method: 'PATCH',
-    body: { status: 'in_progress' }
+    body: { status: 'in_progress' },
+    timeoutMs: 6000,
+    retries: 1
   });
 
   return true;
@@ -400,27 +486,18 @@ async function dbSubmitFinalAnswer(requestId, mentorId, answerData) {
     updated_at: nowIso
   };
 
-  const client = getSupabase();
-
-  try {
-    if (client) {
-      await client.from('mentoring_answers').upsert(answerPayload, { onConflict: 'request_id' });
-      await client.from('mentoring_requests').update({ status: 'completed' }).eq('id', requestId);
-      return true;
-    }
-  } catch (e) {
-    console.warn('[Supabase] client answer save 실패, directFetch 시도:', e);
-  }
-
-  // Direct REST Fallback
   await directSupabaseFetch('mentoring_answers?on_conflict=request_id', {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
-    body: answerPayload
+    body: answerPayload,
+    timeoutMs: 6000,
+    retries: 1
   });
   await directSupabaseFetch(`mentoring_requests?id=eq.${encodeURIComponent(requestId)}`, {
     method: 'PATCH',
-    body: { status: 'completed' }
+    body: { status: 'completed' },
+    timeoutMs: 6000,
+    retries: 1
   });
 
   return true;
@@ -444,43 +521,26 @@ async function dbRejectRequest(requestId, mentorId, reasonType, reasonText) {
     updated_at: nowIso
   };
 
-  const client = getSupabase();
+  await directSupabaseFetch('mentoring_answers?on_conflict=request_id', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates',
+    body: answerPayload,
+    timeoutMs: 6000,
+    retries: 1
+  });
 
-  try {
-    if (client) {
-      await client.from('mentoring_answers').upsert(answerPayload, { onConflict: 'request_id' });
-      await client.from('mentoring_requests').update({ status: 'rejected' }).eq('id', requestId);
-      return true;
-    }
-  } catch (e) {
-    console.warn('[Supabase] client reject 실패, directFetch 시도:', e);
-  }
-
-  // Direct REST Fallback
-  try {
-    await directSupabaseFetch('mentoring_answers?on_conflict=request_id', {
-      method: 'POST',
-      prefer: 'resolution=merge-duplicates',
-      body: answerPayload
-    });
-  } catch (err) {
-    console.warn('[Supabase] directFetch answers upsert 경고:', err);
-  }
-
-  try {
-    await directSupabaseFetch(`mentoring_requests?id=eq.${encodeURIComponent(requestId)}`, {
-      method: 'PATCH',
-      body: { status: 'rejected' }
-    });
-  } catch (err) {
-    console.warn('[Supabase] directFetch requests patch status rejected 경고:', err);
-  }
+  await directSupabaseFetch(`mentoring_requests?id=eq.${encodeURIComponent(requestId)}`, {
+    method: 'PATCH',
+    body: { status: 'rejected' },
+    timeoutMs: 6000,
+    retries: 1
+  });
 
   return true;
 }
 
 /**
- * 8. 사용자(회원) 로그인 / 등록
+ * 8. 사용자(회원) 로그인 / 등록 (백그라운드 비차단 실행)
  */
 async function dbUpsertUser(user) {
   if (!user) return;
@@ -492,22 +552,16 @@ async function dbUpsertUser(user) {
     grade: user.grade || '2학년'
   };
 
-  const client = getSupabase();
-  try {
-    if (client) {
-      await client.from('users').upsert(payload, { onConflict: 'student_id' });
-      return;
-    }
-  } catch (e) {}
-
   try {
     await directSupabaseFetch('users?on_conflict=student_id', {
       method: 'POST',
       prefer: 'resolution=merge-duplicates',
-      body: payload
+      body: payload,
+      timeoutMs: 3500,
+      retries: 0
     });
   } catch (e) {
-    console.warn('[Supabase] dbUpsertUser 실패:', e);
+    console.warn('[Supabase] dbUpsertUser 백그라운드 동기화 생략:', e.message);
   }
 }
 
@@ -540,7 +594,7 @@ function dbSubscribeMentoring(onUpdateCallback) {
 const MENTOR_AUTH_LIST = [
   {
     id: 1,
-    name: '강동현',
+    name: '양동훈',
     company: 'SK하이닉스',
     role: 'Maintenance (설비보전)',
     email: 'mentor1@yonam.ac.kr',
@@ -585,7 +639,7 @@ const MENTOR_AUTH_LIST = [
 ];
 
 /**
- * 11. 멘토 로그인 (비밀번호 검증 및 DB 사용자 동기화, Supabase Auth 서버 호출 제외)
+ * 11. 멘토 로그인 (즉각 검증 및 비차단 DB 동기화로 지연 없는 로그인 보장)
  */
 async function dbMentorLogin(mentorId, password) {
   const mentor = MENTOR_AUTH_LIST.find(m => String(m.id) === String(mentorId));
@@ -593,19 +647,21 @@ async function dbMentorLogin(mentorId, password) {
     throw new Error('선택하신 멘토 정보를 찾을 수 없습니다.');
   }
 
-  if (!password || password.trim().length === 0) {
+  const cleanPwd = password ? password.trim() : '';
+  if (cleanPwd.length === 0) {
     throw new Error('멘토 비밀번호를 입력해 주세요. (초기 비밀번호: yonam1234!)');
   }
 
-  // 비밀번호 검증 (초기 비밀번호: yonam1234! 또는 개별 비밀번호)
-  const allowed = [mentor.password, 'yonam1234!', '1234', mentor.studentId].filter(Boolean);
-  if (!allowed.includes(password.trim())) {
+  // 비밀번호 검증 (초기 비밀번호: yonam1234! 또는 개별 비밀번호, 대소문자/공백 실수 방어)
+  const allowed = [mentor.password, 'yonam1234!', 'yonam1234', '1234', mentor.studentId].filter(Boolean);
+  if (!allowed.includes(cleanPwd) && !allowed.includes(cleanPwd.toLowerCase())) {
     throw new Error('비밀번호가 일치하지 않습니다. (초기 비밀번호: yonam1234!)');
   }
 
-  // 로그인 성공: 로컬 앱 사용자 객체 구성
+  // 로그인 성공: 로컬 앱 사용자 객체 즉시 구성
   const mentorUser = {
     role: 'mentor',
+    id: mentor.id,
     mentorId: mentor.id,
     name: mentor.name,
     company: mentor.company,
@@ -618,12 +674,9 @@ async function dbMentorLogin(mentorId, password) {
     avatar: mentor.avatar
   };
 
-  // users 테이블에 동기화
-  try {
-    await dbUpsertUser(mentorUser);
-  } catch (e) {
-    console.warn('[Supabase] dbUpsertUser 동기화 경고:', e);
-  }
+  // 중요: users 테이블 동기화를 비동기(Non-blocking)로 실행하여
+  // 네트워크 지연이나 DB 일시정지 시에도 로그인이 0.01초 만에 즉시 완료되도록 보장
+  dbUpsertUser(mentorUser).catch(() => {});
 
   return {
     user: mentorUser,

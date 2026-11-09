@@ -120,6 +120,29 @@
         </div>
       </div>
 
+      <!-- CLOUD DB STATUS WARNING BANNER (클라우드 DB 일시정지/연결오류 감지 시 표시) -->
+      <div id="db-status-warning-banner" class="hidden mb-6 bg-amber-50 border-2 border-amber-300 text-amber-950 rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg font-bold shrink-0 shadow-xs mt-0.5">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-extrabold text-sm sm:text-base text-amber-950" id="db-warning-title">클라우드 데이터베이스(Supabase) 연결 대기 중</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-200 text-amber-900">이 PC(브라우저) 임시 저장 모드</span>
+              </div>
+              <p class="text-xs text-amber-900 mt-1 leading-relaxed" id="db-warning-desc">
+                현재 Supabase 클라우드 서버가 응답하지 않거나 <strong>일시정지(Paused)</strong> 상태여서 이 기기(브라우저)의 로컬 캐시만 표시되고 있습니다. 다른 PC·노트북과 게시물을 실시간으로 공유하려면 <strong>Supabase 대시보드(supabase.com)에서 프로젝트 [Restore project]</strong>를 진행해 주세요. 복구 즉시 이 기기에 작성된 글도 자동으로 클라우드에 동기화됩니다.
+              </p>
+            </div>
+          </div>
+          <button onclick="retryCloudConnection()" class="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 self-end sm:self-center cursor-pointer shadow-xs">
+            <i class="fa-solid fa-rotate"></i> 다시 연결 시도
+          </button>
+        </div>
+      </div>
+
       <!-- MENTOR ADMIN NOTICE BANNER (멘토 로그인 시 표시) -->
       <div id="mentor-admin-banner" class="hidden mb-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-700">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -238,13 +261,18 @@
         <div class="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
           <i class="fa-regular fa-comment-dots"></i>
         </div>
-        <h3 class="text-lg font-bold text-slate-900 mb-1">등록된 1:1 멘토링 질문이 없습니다</h3>
-        <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-1" id="empty-state-title">등록된 1:1 멘토링 질문이 없습니다</h3>
+        <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-6" id="empty-state-desc">
           해당 조건에 부합하는 질문이 없습니다. 동문 선배님께 첫 번째 커리어 질문을 남겨보세요!
         </p>
-        <button onclick="openApplyModal()" class="px-6 py-3 bg-[#C30034] hover:bg-[#A3002B] text-white font-bold text-sm rounded-xl shadow-md transition inline-flex items-center gap-2 cursor-pointer">
-          <i class="fa-solid fa-pen-to-square"></i> 멘토링 질문 글쓰기
-        </button>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button id="btn-empty-reset-filter" onclick="resetAllRequestFilters()" class="hidden px-5 py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-xl shadow-md transition inline-flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-rotate-left"></i> 전체 필터 초기화하여 내 글 보기
+          </button>
+          <button id="btn-empty-write" onclick="openApplyModal()" class="px-6 py-3 bg-[#C30034] hover:bg-[#A3002B] text-white font-bold text-sm rounded-xl shadow-md transition inline-flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-pen-to-square"></i> 멘토링 질문 글쓰기
+          </button>
+        </div>
       </div>
 
     </div>
@@ -284,7 +312,7 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">질문할 동문 선배 선택 <span class="text-red-500">*</span></label>
           <select id="modal-select-mentor" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#C30034] bg-white">
-            <option value="1">강동현 선배 (SK하이닉스 · Maintenance)</option>
+            <option value="1">양동훈 선배 (SK하이닉스 · Maintenance)</option>
             <option value="2">박성용 선배 (현대위아 · 등속생산팀 가공3반)</option>
             <option value="3">황문재 선배 (한화에어로스페이스 · 협력사품질1팀)</option>
             <option value="4">김종민 선배 (부산도시가스 · 안전관리실)</option>
@@ -394,7 +422,7 @@
         </button>
       </div>
 
-      <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+      <form onsubmit="handleLoginSubmit(event)" novalidate class="space-y-4">
         <!-- Mentee Fields (기존 상태 유지 / 테스트 버튼 삭제) -->
         <div id="login-mentee-fields" class="space-y-3.5">
           <div>
@@ -427,7 +455,7 @@
             </div>
             
             <div class="grid grid-cols-2 gap-2" id="mentor-select-cards">
-              <!-- 멘토 1: 강동현 -->
+              <!-- 멘토 1: 양동훈 -->
               <div 
                 onclick="selectMentorForLogin(1)" 
                 id="mentor-card-1"
@@ -438,7 +466,7 @@
                     <img src="https://search.pstatic.net/common/?src=http%3A%2F%2Fimgnews.naver.net%2Fimage%2F5095%2F2026%2F06%2F17%2F0001042880_001_20260617102611766.png&type=sc960_832" class="w-full h-full object-contain" alt="SK하이닉스">
                   </div>
                   <div class="min-w-0 pr-3">
-                    <div class="font-bold text-xs text-slate-900 truncate">강동현 멘토</div>
+                    <div class="font-bold text-xs text-slate-900 truncate">양동훈 멘토</div>
                     <div class="text-[10px] text-slate-500 truncate">SK하이닉스</div>
                   </div>
                 </div>
@@ -508,7 +536,7 @@
               <i class="fa-solid fa-user-check text-xs"></i>
             </div>
             <div class="min-w-0 leading-relaxed">
-              선택: <strong id="selected-mentor-name-display" class="text-slate-900 font-bold">강동현 멘토 (SK하이닉스)</strong>
+              선택: <strong id="selected-mentor-name-display" class="text-slate-900 font-bold">양동훈 멘토 (SK하이닉스)</strong>
             </div>
           </div>
 
@@ -575,7 +603,7 @@
         <img id="detail-modal-mentor-avatar" src="logo.png" class="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-slate-200 shrink-0">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <span id="detail-modal-mentor-name" class="font-extrabold text-slate-900 text-sm sm:text-base">강동현 멘토</span>
+            <span id="detail-modal-mentor-name" class="font-extrabold text-slate-900 text-sm sm:text-base">양동훈 멘토</span>
             <span id="detail-modal-answer-date" class="text-xs text-slate-400">2026.10.13</span>
           </div>
           <p id="detail-modal-mentor-role" class="text-xs text-slate-600 truncate">SK하이닉스 · Maintenance (설비보전)</p>
@@ -668,7 +696,7 @@
     };
 
     let MENTORS = [
-      { id: 1, name: "강동현", company: "SK하이닉스", role: "Maintenance (설비보전)", avatar: COMPANY_LOGOS["SK하이닉스"] },
+      { id: 1, name: "양동훈", company: "SK하이닉스", role: "Maintenance (설비보전)", avatar: COMPANY_LOGOS["SK하이닉스"] },
       { id: 2, name: "박성용", company: "현대위아", role: "등속생산팀 가공3반", avatar: COMPANY_LOGOS["현대위아"] },
       { id: 3, name: "황문재", company: "한화에어로스페이스", role: "협력사품질1팀", avatar: COMPANY_LOGOS["한화에어로스페이스"] },
       { id: 4, name: "김종민", company: "부산도시가스", role: "안전관리실 종합상황팀 주임", avatar: COMPANY_LOGOS["부산도시가스"] }
@@ -687,6 +715,9 @@
           myMentoringList = parsed.filter(item => {
             const isOldDummy = ['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id));
             return !isOldDummy;
+          }).map(item => {
+            if (item.mentorId == 1 || item.mentorName === '강동현') item.mentorName = '양동훈';
+            return item;
           });
         }
       }
@@ -703,6 +734,10 @@
       checkAuth();
       parseUrlParams();
       renderMentorFilterChips();
+      renderRequests();
+
+      // 0) 클라우드 DB 연결 상태 확인
+      checkCloudDbStatus();
 
       // 1) 멘토 목록 Supabase 동기화
       try {
@@ -729,6 +764,33 @@
       }
     }
 
+    async function checkCloudDbStatus() {
+      const banner = document.getElementById('db-status-warning-banner');
+      if (!banner || typeof dbCheckHealth !== 'function') return;
+      try {
+        const health = await dbCheckHealth();
+        if (health && !health.ok) {
+          banner.classList.remove('hidden');
+        } else {
+          banner.classList.add('hidden');
+        }
+      } catch (e) {
+        banner.classList.remove('hidden');
+      }
+    }
+
+    async function retryCloudConnection() {
+      showToast('클라우드 데이터베이스 연결을 다시 확인하고 있습니다...');
+      await checkCloudDbStatus();
+      await loadRequests();
+      const banner = document.getElementById('db-status-warning-banner');
+      if (banner && banner.classList.contains('hidden')) {
+        showToast('클라우드 데이터베이스와 정상적으로 연결되었습니다!');
+      } else {
+        showToast('아직 Supabase 프로젝트가 일시정지(Paused) 상태입니다. 대시보드에서 복구해 주세요.');
+      }
+    }
+
     function updateMentorModalSelect() {
       const select = document.getElementById('modal-select-mentor');
       if (!select) return;
@@ -740,11 +802,13 @@
     }
 
     async function loadRequests() {
+      const warningBanner = document.getElementById('db-status-warning-banner');
       try {
         if (typeof dbGetRequests === 'function') {
           // 중요: 프론트엔드 캐시 및 다중 필터링을 위해 Supabase DB에서는 항상 전체 목록을 가져옵니다.
           const liveRequests = await dbGetRequests('ALL', 'ALL', '');
           if (Array.isArray(liveRequests)) {
+            if (warningBanner) warningBanner.classList.add('hidden');
             // 더미 목업 데이터 제외하고 실제 작성 글만 보존
             const validLive = liveRequests.filter(item => !['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id)));
             
@@ -752,7 +816,8 @@
             const map = new Map();
             validLive.forEach(item => map.set(String(item.id), item));
 
-            // 로컬 스토리지 캐시 중 아직 DB에 미반영된 유효 글 병합
+            let localItemsToSync = [];
+            // 로컬 스토리지 캐시 중 아직 DB에 미반영된 유효 글 병합 및 클라우드 자동 업로드
             try {
               const cached = localStorage.getItem('yonam_mentoring_requests');
               if (cached) {
@@ -764,6 +829,7 @@
                       const strId = String(item.id);
                       if (!map.has(strId)) {
                         map.set(strId, item);
+                        localItemsToSync.push(item);
                       } else {
                         // DB에 answer가 비어있고 로컬스토리지에 answer가 있다면 로컬 answer 보존
                         const live = map.get(strId);
@@ -778,6 +844,11 @@
               }
             } catch (e) {}
 
+            // 이 PC(로컬)에만 저장되어 있던 글이 있다면 클라우드 DB로 자동 업로드하여 다른 기기에서도 즉시 보이게 함
+            if (typeof dbSyncPendingLocalRequests === 'function' && localItemsToSync.length > 0) {
+              dbSyncPendingLocalRequests(localItemsToSync, validLive).catch(() => {});
+            }
+
             myMentoringList = Array.from(map.values());
             const REJECT_MAP = {
               schedule: '현재 개인 일정 및 직무 업무 과중으로 답변이 어렵습니다.',
@@ -785,6 +856,9 @@
               other: '기타 개인 사유로 부득이하게 답변이 어려운 점 양해 부탁드립니다.'
             };
             myMentoringList.forEach(item => {
+              if (item.mentorId == 1 || item.mentorName === '강동현') {
+                item.mentorName = '양동훈';
+              }
               if (item.status === 'rejected') {
                 if (!item.rejectReason || item.rejectReason.includes('?') || item.rejectReason.trim().length < 5) {
                   item.rejectReason = REJECT_MAP[item.rejectReasonType] || REJECT_MAP.schedule;
@@ -794,10 +868,13 @@
             localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
             renderRequests();
             return;
+          } else {
+            if (warningBanner) warningBanner.classList.remove('hidden');
           }
         }
       } catch (err) {
         console.warn('Supabase 질문 목록 로드 실패 (로컬 캐시 유지):', err);
+        if (warningBanner) warningBanner.classList.remove('hidden');
       }
 
       // Supabase 통신 실패 시 로컬 스토리지 캐시 보존
@@ -832,7 +909,12 @@
       const params = new URLSearchParams(window.location.search);
       const mentorId = params.get('mentorId');
       if (mentorId) {
-        selectedMentorFilter = mentorId;
+        // 만약 현재 멘토로 로그인되어 있다면 본인의 mentorId를 우선 유지하여 타 멘토 필터로 인해 글이 안 보이는 현상 방지
+        if (currentUser && currentUser.role === 'mentor' && currentUser.mentorId) {
+          selectedMentorFilter = String(currentUser.mentorId);
+        } else {
+          selectedMentorFilter = mentorId;
+        }
         const select = document.getElementById('modal-select-mentor');
         if (select) select.value = mentorId;
       }
@@ -901,14 +983,28 @@
       renderRequests();
     }
 
+    function resetAllRequestFilters() {
+      if (currentUser && currentUser.role === 'mentor' && currentUser.mentorId) {
+        selectedMentorFilter = String(currentUser.mentorId);
+      } else {
+        selectedMentorFilter = 'ALL';
+      }
+      selectedStatusFilter = 'ALL';
+      searchQuery = '';
+      const searchInput = document.getElementById('search-requests-input');
+      if (searchInput) searchInput.value = '';
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderMentorFilterChips();
+      setStatusFilter('ALL');
+    }
+
     function filterMyStudentRequests() {
       if (!currentUser) {
         showLoginModal('mentee');
         return;
       }
-      selectedMentorFilter = 'ALL';
-      renderMentorFilterChips();
-      setStatusFilter('ALL');
+      resetAllRequestFilters();
     }
 
     function handleSearchRequests() {
@@ -933,6 +1029,22 @@
       renderRequests();
     }
 
+    function isMatchingUserRequest(item) {
+      if (!currentUser) return false;
+      if (currentUser.role === 'mentee') {
+        const uId = currentUser.studentId ? String(currentUser.studentId).trim() : '';
+        const iId = item.studentId ? String(item.studentId).trim() : '';
+        const uName = currentUser.name ? String(currentUser.name).trim().replace(/\s+/g, '') : '';
+        const iName = item.studentName ? String(item.studentName).trim().replace(/\s+/g, '') : '';
+        return (uId && iId && uId === iId) || (uName && iName && uName === iName);
+      }
+      if (currentUser.role === 'mentor') {
+        const mId = currentUser.mentorId || currentUser.id;
+        return mId && String(item.mentorId).trim() === String(mId).trim();
+      }
+      return true;
+    }
+
     function getFilteredRequests() {
       // 1. 비로그인 상태인 경우: 본인 확인이 되지 않으므로 목록 표시 안 함
       if (!currentUser) {
@@ -940,29 +1052,21 @@
       }
 
       return myMentoringList.filter(item => {
-        // 2. 학생(멘티)인 경우: 오직 본인이 쓴 질문과 그 답변만 표시!
-        if (currentUser.role === 'mentee') {
-          const isMyStudentReq = 
-            (currentUser.studentId && item.studentId && String(item.studentId) === String(currentUser.studentId)) ||
-            (currentUser.name && item.studentName && item.studentName === currentUser.name);
-          
-          if (!isMyStudentReq) return false;
-        }
-
-        // 3. 멘토인 경우: 오직 본인에게 온 질문과 그 답변만 표시!
-        if (currentUser.role === 'mentor') {
-          const isMyMentorReq = currentUser.mentorId && String(item.mentorId) === String(currentUser.mentorId);
-          if (!isMyMentorReq) return false;
-        }
+        // 2 & 3. 학생(멘티) 또는 멘토 본인 해당 글 여부 확인 (공백/타입 정규화 적용)
+        if (!isMatchingUserRequest(item)) return false;
 
         // 4. 선배 멘토 필터
-        if (selectedMentorFilter !== 'ALL' && String(item.mentorId) !== String(selectedMentorFilter)) {
+        if (selectedMentorFilter !== 'ALL' && String(item.mentorId).trim() !== String(selectedMentorFilter).trim()) {
           return false;
         }
 
-        // 5. 상태 필터 (ALL, completed, pending)
-        if (selectedStatusFilter !== 'ALL' && item.status !== selectedStatusFilter) {
-          return false;
+        // 5. 상태 필터 (ALL, completed, pending, rejected)
+        if (selectedStatusFilter !== 'ALL') {
+          if (selectedStatusFilter === 'pending') {
+            if (item.status !== 'pending' && item.status !== 'in_progress') return false;
+          } else if (item.status !== selectedStatusFilter) {
+            return false;
+          }
         }
 
         // 6. 검색어 필터
@@ -1001,12 +1105,38 @@
       if (loginRequiredState) loginRequiredState.classList.add('hidden');
 
       const filtered = getFilteredRequests();
+      const allMyOwnCount = myMentoringList.filter(item => isMatchingUserRequest(item)).length;
       if (totalBadge) totalBadge.textContent = `${filtered.length}건`;
 
-      // 로그인 상태이지만 본인의 질문이 없을 때
+      // 로그인 상태이지만 현재 필터에 해당하는 질문이 없을 때
       if (filtered.length === 0) {
         if (container) container.classList.add('hidden');
         if (emptyState) emptyState.classList.remove('hidden');
+
+        const emptyTitle = document.getElementById('empty-state-title');
+        const emptyDesc = document.getElementById('empty-state-desc');
+        const resetBtn = document.getElementById('btn-empty-reset-filter');
+        const writeBtn = document.getElementById('btn-empty-write');
+
+        if (allMyOwnCount > 0) {
+          // 본인의 질문은 존재하지만 선배 필터/상태 필터/검색어 때문에 가려진 경우!
+          if (emptyTitle) emptyTitle.textContent = `현재 선택된 필터 조건에 해당하는 질문이 없습니다 (내 전체 글 ${allMyOwnCount}건)`;
+          if (emptyDesc) emptyDesc.textContent = '다른 선배 멘토 필터나 상태 탭이 선택되어 있어 작성하신 글이 숨겨져 있습니다. 아래 버튼을 눌러 전체 글을 확인하세요.';
+          if (resetBtn) resetBtn.classList.remove('hidden');
+        } else {
+          if (emptyTitle) emptyTitle.textContent = '등록된 1:1 멘토링 질문이 없습니다';
+          if (emptyDesc) {
+            emptyDesc.textContent = currentUser.role === 'mentor'
+              ? '현재 선배님께 접수된 후배들의 질문이 없거나, 다른 기기에서 작성된 글이 클라우드 DB 일시정지로 인해 아직 동기화되지 않았습니다.'
+              : '해당 계정(학번/이름)으로 등록된 질문이 없습니다. 동문 선배님께 첫 번째 커리어 질문을 남겨보세요!';
+          }
+          if (resetBtn) resetBtn.classList.add('hidden');
+        }
+
+        if (writeBtn) {
+          if (currentUser.role === 'mentor') writeBtn.classList.add('hidden');
+          else writeBtn.classList.remove('hidden');
+        }
         return;
       }
 
@@ -1019,10 +1149,7 @@
         const isInProgress = req.status === 'in_progress';
         
         // 현재 로그인 사용자의 본인 작성 글 여부
-        const isMyRequest = currentUser && (
-          (currentUser.studentId && req.studentId && String(req.studentId) === String(currentUser.studentId)) ||
-          (currentUser.name && req.studentName && req.studentName === currentUser.name)
-        );
+        const isMyRequest = currentUser && currentUser.role === 'mentee' && isMatchingUserRequest(req);
 
         let statusBadge = `
           <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
@@ -1191,6 +1318,9 @@
                 <span class="text-xs text-slate-400">
                   (${req.studentName ? req.studentName.charAt(0) + 'O' + (req.studentName.length > 2 ? req.studentName.slice(2) : '') : '재학생'})
                 </span>
+                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  To. ${req.mentorName || (mentorObj ? mentorObj.name : '동문')} 선배 (${mentorCompany})
+                </span>
                 ${isMyRequest ? `
                   <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1 shadow-2xs">
                     <i class="fa-solid fa-star text-amber-400"></i> 내가 쓴 질문
@@ -1219,7 +1349,7 @@
             </div>
 
             <!-- Mentor Management Action (멘토 로그인 시 답변 작성/수정 버튼 노출) -->
-            ${(currentUser && currentUser.role === 'mentor' && String(currentUser.mentorId) === String(req.mentorId)) ? `
+            ${(currentUser && currentUser.role === 'mentor' && String(currentUser.mentorId || currentUser.id) === String(req.mentorId)) ? `
               <div class="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-3 bg-red-50/40 p-3 rounded-xl border border-red-100">
                 <div class="text-xs text-slate-600">
                   <span class="font-bold text-[#C30034]"><i class="fa-solid fa-user-tie"></i> 멘토 관리자 기능:</span>
@@ -1424,7 +1554,7 @@
         mentorCompany: mentorObj.company,
         mentorRole: mentorObj.role,
         mentorAvatar: mentorObj.avatar,
-        studentName: currentUser ? currentUser.name : '김철수',
+        studentName: currentUser ? String(currentUser.name).trim() : '김철수',
         department: currentUser ? (currentUser.major || currentUser.department) : '기계공학과',
         studentId: safeStudentId,
         grade: '2학년',
@@ -1440,28 +1570,39 @@
       myMentoringList.unshift(newReq);
       localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
 
-      // 2) Supabase 데이터베이스 저장
+      // 2) 방금 질문한 글이 어떤 필터나 상태 탭에서도 가려지지 않도록 필터 자동 조정 및 즉시 렌더링
+      if (selectedMentorFilter !== 'ALL' && String(selectedMentorFilter) !== String(mentorObj.id)) {
+        selectedMentorFilter = 'ALL';
+        renderMentorFilterChips();
+      }
+      if (selectedStatusFilter !== 'ALL' && selectedStatusFilter !== 'pending') {
+        setStatusFilter('ALL');
+      } else {
+        renderRequests();
+      }
+
+      closeApplyModal();
+
+      // 3) Supabase 데이터베이스 저장
+      let dbSuccess = false;
       try {
         if (typeof dbCreateRequest === 'function') {
           await dbCreateRequest(newReq);
+          dbSuccess = true;
           console.log('[Supabase] 질문 등록 성공 및 DB 반영 완료');
         }
       } catch (err) {
         console.warn('Supabase 요청 등록 중 경고 (로컬 캐시 보존됨):', err);
       }
 
-      // 3) 최신 데이터베이스 상태와 재동기화
-      await loadRequests();
-
-      // 4) 방금 질문한 멘토 필터가 화면에 보이도록 조정
-      if (selectedMentorFilter !== 'ALL' && String(selectedMentorFilter) !== String(mentorObj.id)) {
-        setMentorFilter('ALL');
+      if (dbSuccess) {
+        showToast('멘토링 질문이 클라우드 DB에 정상 등록되었습니다!');
+        loadRequests().catch(() => {});
       } else {
-        renderRequests();
+        const warningBanner = document.getElementById('db-status-warning-banner');
+        if (warningBanner) warningBanner.classList.remove('hidden');
+        showToast('클라우드 DB가 일시정지 상태여서 현재 PC에만 임시 저장되었습니다.');
       }
-
-      closeApplyModal();
-      showToast('멘토링 질문이 성공적으로 등록되었습니다!');
     }
 
     // Auth & Modal Helpers
@@ -1470,6 +1611,10 @@
       if (savedUser) {
         try {
           currentUser = JSON.parse(savedUser);
+          if (currentUser && currentUser.role === 'mentor' && (currentUser.id === 1 || currentUser.mentorId === 1 || currentUser.name === '강동현')) {
+            currentUser.name = '양동훈';
+            localStorage.setItem('yonam_user', JSON.stringify(currentUser));
+          }
           updateAuthUI(currentUser);
         } catch(e) {
           currentUser = null;
@@ -1530,6 +1675,9 @@
       const menteeFields = document.getElementById('login-mentee-fields');
       const mentorFields = document.getElementById('login-mentor-fields');
       const submitBtnText = document.getElementById('btn-login-text');
+      const stuIdInput = document.getElementById('login-student-id');
+      const stuNameInput = document.getElementById('login-name');
+      const pwdInput = document.getElementById('login-mentor-password');
 
       if (!menteeTab || !mentorTab || !menteeFields || !mentorFields) return;
 
@@ -1538,12 +1686,22 @@
         mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer';
         menteeFields.classList.remove('hidden');
         mentorFields.classList.add('hidden');
+        if (stuIdInput) stuIdInput.required = true;
+        if (stuNameInput) stuNameInput.required = true;
+        if (pwdInput) pwdInput.required = false;
         if (submitBtnText) submitBtnText.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-1"></i> 학생으로 로그인';
       } else {
         mentorTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-bold text-[#C30034] border-b-2 border-[#C30034] transition cursor-pointer';
         menteeTab.className = 'flex-1 py-2.5 text-center text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition cursor-pointer';
         mentorFields.classList.remove('hidden');
         menteeFields.classList.add('hidden');
+        // 중요: 숨겨진 학생 입력창의 required 속성으로 인해 브라우저가 폼 제출을 차단하는 현상 완벽 방지
+        if (stuIdInput) stuIdInput.required = false;
+        if (stuNameInput) stuNameInput.required = false;
+        if (pwdInput) {
+          pwdInput.required = true;
+          setTimeout(() => pwdInput.focus(), 50);
+        }
         if (submitBtnText) submitBtnText.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 멘토 비밀번호 로그인';
       }
     }
@@ -1602,8 +1760,8 @@
     }
 
     function filterMyMentorRequests() {
-      if (currentUser && currentUser.role === 'mentor' && currentUser.mentorId) {
-        setMentorFilter(String(currentUser.mentorId));
+      if (currentUser && currentUser.role === 'mentor' && (currentUser.mentorId || currentUser.id)) {
+        setMentorFilter(String(currentUser.mentorId || currentUser.id));
       }
     }
 
@@ -1636,14 +1794,18 @@
 
         currentUser = { role: 'mentee', major, studentId, name, grade: '2학년' };
         localStorage.setItem('yonam_user', JSON.stringify(currentUser));
-        if (typeof dbUpsertUser === 'function') dbUpsertUser(currentUser);
+        if (typeof dbUpsertUser === 'function') dbUpsertUser(currentUser).catch(() => {});
 
         updateAuthUI(currentUser);
         closeLoginModal();
+        // 학생 로그인 시 특정 멘토 필터로 인해 본인 글이 가려지지 않도록 전체 보기 보장
+        selectedMentorFilter = 'ALL';
+        renderMentorFilterChips();
+        renderRequests();
         showToast(`${name} 학생으로 로그인되었습니다.`);
-        await loadRequests();
+        loadRequests().catch(() => {});
       } else {
-        // 멘토 로그인: 4명의 멘토 중 선택 & 비밀번호 입력 검증 (Supabase Auth 서버 연동 제외)
+        // 멘토 로그인: 4명의 멘토 중 선택 & 비밀번호 입력 즉시 검증 (네트워크 대기 없이 즉각 로그인 처리)
         const mentorId = selectedMentorId || Number(document.getElementById('login-selected-mentor-id').value) || 1;
         const passwordInput = document.getElementById('login-mentor-password');
         const password = passwordInput ? passwordInput.value : '';
@@ -1665,7 +1827,8 @@
             const loginResult = await dbMentorLogin(mentorId, password);
             mentorUser = loginResult ? loginResult.user : null;
           } else {
-            if (password.trim() !== 'yonam1234!' && password.trim() !== '1234') {
+            const cleanPwd = password.trim().toLowerCase();
+            if (cleanPwd !== 'yonam1234!' && cleanPwd !== 'yonam1234' && cleanPwd !== '1234') {
               throw new Error('비밀번호가 일치하지 않습니다. (초기 비밀번호: yonam1234!)');
             }
           }
@@ -1696,10 +1859,11 @@
           if (passwordInput) passwordInput.value = '';
           updateAuthUI(currentUser);
           closeLoginModal();
+          filterMyMentorRequests();
+          renderRequests();
           showToast(`${currentUser.name} 멘토님 환영합니다!`);
 
-          filterMyMentorRequests();
-          await loadRequests();
+          loadRequests().catch(() => {});
         } catch (err) {
           console.error('멘토 로그인 실패:', err);
           alert(err.message || '멘토 로그인에 실패했습니다. 비밀번호를 확인해주세요.');
