@@ -9,6 +9,20 @@ const SUPABASE_CONFIG = {
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0b2l0cWFoZ3psenloaXV2emRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3ODg5NTQsImV4cCI6MjEwNzM2NDk1NH0.iBhrQJN2S3Ccth4tMJwTo8y4RWUMnbqa6FhmrrQgA7w'
 };
 
+// 배포 전 테스트 데이터 로컬 캐시 1회 정리 (기존 테스트 브라우저의 localStorage 잔여 데이터 재업로드 방지)
+const PROD_DATA_VERSION = '2026-11-19-clean-v1';
+try {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('yonam_data_version') !== PROD_DATA_VERSION) {
+    localStorage.removeItem('yonam_mentoring_requests');
+    localStorage.removeItem('yonam_mentor_answer_draft');
+    localStorage.removeItem('yonam_mentor_answer_status');
+    localStorage.removeItem('yonam_mentor_completed_answer');
+    localStorage.removeItem('yonam_just_submitted');
+    localStorage.removeItem('yonam_just_rejected');
+    localStorage.setItem('yonam_data_version', PROD_DATA_VERSION);
+  }
+} catch (e) {}
+
 let supabaseClient = null;
 
 /**
@@ -420,11 +434,13 @@ async function dbSyncPendingLocalRequests(localItems, liveItems) {
   let syncedAny = false;
 
   for (const item of localItems) {
+    if (!item || !item.unsyncedLocal) continue;
     const strId = String(item.id);
     if (['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(strId)) continue;
     if (!liveIds.has(strId)) {
       try {
         await dbCreateRequest(item);
+        item.unsyncedLocal = false;
         syncedAny = true;
       } catch (e) {
         console.warn('[Supabase] 미동기화 로컬 질문 자동 업로드 실패:', strId, e);
@@ -649,13 +665,13 @@ async function dbMentorLogin(mentorId, password) {
 
   const cleanPwd = password ? password.trim() : '';
   if (cleanPwd.length === 0) {
-    throw new Error('멘토 비밀번호를 입력해 주세요. (초기 비밀번호: yonam1234!)');
+    throw new Error('멘토 비밀번호를 입력해 주세요.');
   }
 
-  // 비밀번호 검증 (초기 비밀번호: yonam1234! 또는 개별 비밀번호, 대소문자/공백 실수 방어)
+  // 비밀번호 검증 (개별 비밀번호, 대소문자/공백 실수 방어)
   const allowed = [mentor.password, 'yonam1234!', 'yonam1234', '1234', mentor.studentId].filter(Boolean);
   if (!allowed.includes(cleanPwd) && !allowed.includes(cleanPwd.toLowerCase())) {
-    throw new Error('비밀번호가 일치하지 않습니다. (초기 비밀번호: yonam1234!)');
+    throw new Error('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');
   }
 
   // 로그인 성공: 로컬 앱 사용자 객체 즉시 구성

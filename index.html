@@ -566,7 +566,7 @@
               </button>
             </div>
             <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1.5 px-0.5">
-              <span><i class="fa-solid fa-key text-amber-500 mr-1"></i>초기 비밀번호: <strong class="text-slate-700 font-semibold">yonam1234!</strong></span>
+              <span><i class="fa-solid fa-lock text-slate-400 mr-1"></i>발급받은 멘토 비밀번호를 입력해 주세요.</span>
               <span class="text-slate-400 text-[10px]">멘토 전용 인증</span>
             </div>
           </div>
@@ -710,7 +710,7 @@
               if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed)) {
-                  localItems = parsed.filter(item => !['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id)));
+                  localItems = parsed.filter(item => item && item.unsyncedLocal && !['req-1', 'req-2', 'req-3', 'req-4', 'req-5'].includes(String(item.id)));
                   localItems.forEach(item => {
                     if (!map.has(String(item.id))) {
                       map.set(String(item.id), item);
@@ -720,7 +720,7 @@
               }
             } catch(e) {}
 
-            // 로컬에만 있고 클라우드 DB에 아직 업로드되지 않은 질문이 있다면 백그라운드에서 자동 동기화
+            // 오프라인(DB 미연결) 상태에서 로컬에만 저장된 미동기화 질문이 있다면 백그라운드에서 자동 동기화
             if (typeof dbSyncPendingLocalRequests === 'function' && localItems.length > 0) {
               dbSyncPendingLocalRequests(localItems, validLive).catch(() => {});
             }
@@ -1085,7 +1085,8 @@
         effort: effortEl.value.trim(),
         q1: q1Val,
         q2: q2El ? q2El.value.trim() : '',
-        answer: null
+        answer: null,
+        unsyncedLocal: true
       };
 
       // 1) 로컬 스토리지 선반영
@@ -1100,6 +1101,8 @@
       try {
         if (typeof dbCreateRequest === 'function') {
           await dbCreateRequest(newReq);
+          newReq.unsyncedLocal = false;
+          localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
           dbSuccess = true;
           console.log('[Supabase] 메인 신청 등록 완료');
         }
@@ -1286,7 +1289,7 @@
         const password = passwordInput ? passwordInput.value : '';
 
         if (!password || password.trim().length === 0) {
-          alert('멘토 비밀번호를 입력해 주세요. (초기 비밀번호: yonam1234!)');
+          alert('멘토 비밀번호를 입력해 주세요.');
           if (passwordInput) passwordInput.focus();
           return;
         }
@@ -1304,7 +1307,7 @@
           } else {
             const cleanPwd = password.trim().toLowerCase();
             if (cleanPwd !== 'yonam1234!' && cleanPwd !== 'yonam1234' && cleanPwd !== '1234') {
-              throw new Error('비밀번호가 일치하지 않습니다. (초기 비밀번호: yonam1234!)');
+              throw new Error('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');
             }
           }
 

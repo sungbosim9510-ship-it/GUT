@@ -560,7 +560,7 @@
               </button>
             </div>
             <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1.5 px-0.5">
-              <span><i class="fa-solid fa-key text-amber-500 mr-1"></i>초기 비밀번호: <strong class="text-slate-700 font-semibold">yonam1234!</strong></span>
+              <span><i class="fa-solid fa-lock text-slate-400 mr-1"></i>발급받은 멘토 비밀번호를 입력해 주세요.</span>
               <span class="text-slate-400 text-[10px]">멘토 전용 인증</span>
             </div>
           </div>
@@ -817,7 +817,7 @@
             validLive.forEach(item => map.set(String(item.id), item));
 
             let localItemsToSync = [];
-            // 로컬 스토리지 캐시 중 아직 DB에 미반영된 유효 글 병합 및 클라우드 자동 업로드
+            // 오프라인(DB 미연결) 상태에서 로컬에만 저장된 미동기화 질문 병합 및 클라우드 자동 업로드
             try {
               const cached = localStorage.getItem('yonam_mentoring_requests');
               if (cached) {
@@ -828,8 +828,10 @@
                     if (!isDummy) {
                       const strId = String(item.id);
                       if (!map.has(strId)) {
-                        map.set(strId, item);
-                        localItemsToSync.push(item);
+                        if (item.unsyncedLocal) {
+                          map.set(strId, item);
+                          localItemsToSync.push(item);
+                        }
                       } else {
                         // DB에 answer가 비어있고 로컬스토리지에 answer가 있다면 로컬 answer 보존
                         const live = map.get(strId);
@@ -1563,7 +1565,8 @@
         effort: effortEl.value.trim(),
         q1: q1Val,
         q2: q2El ? q2El.value.trim() : '',
-        answer: null
+        answer: null,
+        unsyncedLocal: true
       };
 
       // 1) 로컬 스토리지에 즉시 안전 저장
@@ -1588,6 +1591,8 @@
       try {
         if (typeof dbCreateRequest === 'function') {
           await dbCreateRequest(newReq);
+          newReq.unsyncedLocal = false;
+          localStorage.setItem('yonam_mentoring_requests', JSON.stringify(myMentoringList));
           dbSuccess = true;
           console.log('[Supabase] 질문 등록 성공 및 DB 반영 완료');
         }
@@ -1811,7 +1816,7 @@
         const password = passwordInput ? passwordInput.value : '';
 
         if (!password || password.trim().length === 0) {
-          alert('멘토 비밀번호를 입력해 주세요. (초기 비밀번호: yonam1234!)');
+          alert('멘토 비밀번호를 입력해 주세요.');
           if (passwordInput) passwordInput.focus();
           return;
         }
@@ -1829,7 +1834,7 @@
           } else {
             const cleanPwd = password.trim().toLowerCase();
             if (cleanPwd !== 'yonam1234!' && cleanPwd !== 'yonam1234' && cleanPwd !== '1234') {
-              throw new Error('비밀번호가 일치하지 않습니다. (초기 비밀번호: yonam1234!)');
+              throw new Error('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');
             }
           }
 
